@@ -85,7 +85,7 @@ class Cable(TransmissionElement):
         self.resample(self.freqs0)
 
 
-# Theoretical modeling of cable transmission base on an equation:
+# Theoretical modeling of cable transmission based on an equation:
 class CableModel:
     """ z : in units of 100 ft
         k1 : in units of dB/100 ft/GHz^0.5
