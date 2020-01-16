@@ -65,50 +65,85 @@ class App:
         return bpm,signal_transfer_line
 
     def init_fig(self,bpm):
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        ax.set_xlabel("Time, ns")
-        ax.set_ylabel("Reconstructed signal from wall-current monitor, V")
+        self.fig = Figure()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel("Time, ns")
+        self.ax.set_ylabel("Reconstructed signal from wall-current monitor, V")
         x0 = np.arange(0,bpm.data_len*bpm.dt,bpm.dt)
         y0 = bpm.reconstructed_signal
         y0min = min(y0)
         y0max = max(y0)
         y0span = y0max - y0min
         yadd = 0.1 * y0span
-        ax.set_ylim(y0min - yadd, y0max + yadd)
-        line, = ax.plot(x0, y0, marker='o', color='orange')
-        ax.grid()
-        return fig, ax, line
+        self.ax.set_ylim(y0min - yadd, y0max + yadd)
+        self.line, = self.ax.plot(x0, y0, marker='o', color='orange')
+        self.ax.grid()
 
-    def init_tkinter(self,fig):
+    def init_control_panel(self):
+        self.control_panel_canvas = tkinter.Canvas(self.root, width = 1000, height = 300)
+        self.control_panel_canvas.pack()
+        self.x_lim_min = tkinter.Entry (self.root) 
+        self.x_lim_min.insert(0,"{:.3f}".format(self.ax.get_xlim()[0]))
+        self.control_panel_canvas.create_window(100, 100, window=self.x_lim_min)
+        self.control_panel_canvas.create_window(100, 80, window=tkinter.Label(self.root, text="Xmin, ns"))
+        self.x_lim_max = tkinter.Entry (self.root)
+        self.x_lim_max.insert(0,"{:.3f}".format(self.ax.get_xlim()[1]))
+        self.control_panel_canvas.create_window(250, 100, window=self.x_lim_max)
+        self.control_panel_canvas.create_window(250, 80, window=tkinter.Label(self.root, text="Xmax, ns"))
+        self.y_lim_min = tkinter.Entry (self.root)
+        self.y_lim_min.insert(0,"{:.3f}".format(self.ax.get_ylim()[0]))
+        self.control_panel_canvas.create_window(100, 50, window=self.y_lim_min)
+        self.control_panel_canvas.create_window(100, 30, window=tkinter.Label(self.root, text="Ymin, ns"))
+        self.y_lim_max = tkinter.Entry (self.root) 
+        self.y_lim_max.insert(0,"{:.3f}".format(self.ax.get_ylim()[1]))
+        self.control_panel_canvas.create_window(250, 50, window=self.y_lim_max)
+        self.control_panel_canvas.create_window(250, 30, window=tkinter.Label(self.root, text="Ymax, ns"))
+
+        self.change_xy_lim_button = tkinter.Button(text='Apply changes', command=self.change_xy_lim)
+        self.control_panel_canvas.create_window(175, 150, window=self.change_xy_lim_button)
+
+    def init_tkinter(self):
         # initialise a window.
-        root = tkinter.Tk()
-        root.config(background='white')
-        root.geometry("1000x700")
-        lab = tkinter.Label(root, text="Bunch profile monitor", bg='white').pack()
-        graph = FigureCanvasTkAgg(fig, master=root)
-        graph.get_tk_widget().pack(side="top", fill='both', expand=True)
-        return root, graph
+        self.root = tkinter.Tk()
+        self.root.config(background='white')
+        self.root.geometry("1000x700")
+        lab = tkinter.Label(self.root, text="Bunch profile monitor", bg='white').pack()
+        self.graph = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.graph.get_tk_widget().pack(side="top", fill='both', expand=True)
+    
+    def change_xy_lim(self):  
+        try:
+            self.ax.set_xlim(float(self.x_lim_min.get()),float(self.x_lim_max.get()))
+            self.ax.set_ylim(float(self.y_lim_min.get()),float(self.y_lim_max.get()))
+        except:
+            pass
 
-    def try_update_plot(self,line, ax, graph, root):
+
+
+    def try_update_plot(self):
          if not self.new_data_queue.empty():
             new_data = self.new_data_queue.get()
             #line.set_xdata(new_data[0])
-            line.set_ydata(new_data)
-            ax.set_title("Last updated: {}".format(datetime.datetime.now()))
-            graph.draw()
+            # try:
+            #     self.ax.set_xlim(0,self.x1)
+            # except:
+            #     pass
+            self.line.set_ydata(new_data)
+            self.ax.set_title("Last updated: {}".format(datetime.datetime.now()))
+            self.graph.draw()
             # with self.new_data_queue.mutex:
             #     self.new_data_queue.queue.clear()
-         root.after(100, self.try_update_plot, line, ax, graph, root)
+         self.root.after(200, self.try_update_plot)
 
     def run(self,use_test_data = False):
         bpm,signal_transfer_line = self.init_bpm_signal_transfer_line(use_test_data)
-        fig, ax, line = self.init_fig(bpm)
-        root, graph = self.init_tkinter(fig)
+        self.init_fig(bpm)
+        self.init_tkinter()
+        self.init_control_panel()
         t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,self.new_data_queue)
         t.start()
-        root.after(100, self.try_update_plot, line, ax, graph, root)
-        root.mainloop()
+        self.root.after(100, self.try_update_plot)
+        self.root.mainloop()
 
 
 
