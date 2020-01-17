@@ -28,10 +28,11 @@ class bpm_data_updater(threading.Thread):
             update_successful = self.bpm.update_data(testing=self.use_test_data)
             self.bpm.perform_fft()
             self.bpm.perform_signal_reconstruction()
+            self.bpm.calc_fwhm()
             if update_successful:
                 with self.new_data_queue.mutex:
                     self.new_data_queue.queue.clear()
-                self.new_data_queue.put(self.bpm.reconstructed_signal)
+                self.new_data_queue.put({"chart":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
 
 class App:
     def __init__(self):
@@ -50,7 +51,7 @@ class App:
 
     def init_bpm_signal_transfer_line(self, useTestData):
         conn = ConnectionToScope()
-        bpm = BunchProfileMonitor(connection_to_scope=conn,dt=0.2)
+        bpm = BunchProfileMonitor(connection_to_scope=conn,dt=0.1)
         attempt = 0
         while True:
             if attempt > 5:
@@ -102,6 +103,22 @@ class App:
         self.change_xy_lim_button = tkinter.Button(text='Apply changes', command=self.change_xy_lim)
         self.control_panel_canvas.create_window(175, 150, window=self.change_xy_lim_button)
 
+        self.control_panel_canvas.create_window(500, 30, window=tkinter.Label(self.root, text="FWHM, ns"))
+        self.fwhm_textvariable = tkinter.StringVar()
+        self.fwhm_label = tkinter.Label(self.root, textvariable = self.fwhm_textvariable)
+        self.control_panel_canvas.create_window(500, 50, window=self.fwhm_label)
+
+        # Saving file window:
+        self.saved_file_folder = tkinter.Entry (self.root) 
+        self.saved_file_folder.insert(0,"my_folder")
+        self.control_panel_canvas.create_window(700, 50, window=self.saved_file_folder)
+        self.control_panel_canvas.create_window(700, 30, window=tkinter.Label(self.root, text="Waveforms are saved to:"))
+        self.save_file_button = tkinter.Button(text='Save file', command=self.save_file)
+        self.control_panel_canvas.create_window(700, 150, window=self.save_file_button)
+
+    def save_file(self):
+        pass
+
     def init_tkinter(self):
         # initialise a window.
         self.root = tkinter.Tk()
@@ -118,21 +135,16 @@ class App:
         except:
             pass
 
-
-
     def try_update_plot(self):
          if not self.new_data_queue.empty():
             new_data = self.new_data_queue.get()
-            #line.set_xdata(new_data[0])
-            # try:
-            #     self.ax.set_xlim(0,self.x1)
-            # except:
-            #     pass
-            self.line.set_ydata(new_data)
+            chart = new_data["chart"]   
+            fwhm = new_data["fwhm"]
+            self.line.set_ydata(chart)
+            self.fwhm_textvariable.set("{:.3f}".format(fwhm))
             self.ax.set_title("Last updated: {}".format(datetime.datetime.now()))
             self.graph.draw()
-            # with self.new_data_queue.mutex:
-            #     self.new_data_queue.queue.clear()
+
          self.root.after(200, self.try_update_plot)
 
     def run(self,use_test_data = False):
