@@ -6,7 +6,7 @@ class ConnectionToScope():
     timeout = 1#sec
     HOST, PORT = "131.225.118.120", 1861
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?"
-    quiery_waveform = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C4:INSPECT? SIMPLE"
+    quiery_waveform = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE"
     def get_waveform(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)

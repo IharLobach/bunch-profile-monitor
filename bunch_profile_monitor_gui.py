@@ -9,19 +9,23 @@ import datetime
 import threading
 import queue
 import numpy as np
+import pandas as pd
 import os
+import sys
+import time
 
 
 
 class bpm_data_updater(threading.Thread):
     daemon = True
 
-    def __init__(self, bpm,use_test_data,signal_transfer_line,new_data_queue):
+    def __init__(self, bpm,use_test_data,signal_transfer_line,new_data_to_show_queue,new_data_to_save_queue):
         super().__init__()
         self.bpm = bpm
         self.use_test_data = use_test_data
         self.signal_transfer_line = signal_transfer_line
-        self.new_data_queue = new_data_queue
+        self.new_data_to_show_queue = new_data_to_show_queue
+        self.new_data_to_save_queue = new_data_to_save_queue
 
     def run(self):
         while True:
@@ -30,18 +34,32 @@ class bpm_data_updater(threading.Thread):
             self.bpm.perform_signal_reconstruction()
             self.bpm.calc_fwhm()
             if update_successful:
-                with self.new_data_queue.mutex:
-                    self.new_data_queue.queue.clear()
-                self.new_data_queue.put({"chart":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
+                with self.new_data_to_show_queue.mutex:
+                    self.new_data_to_show_queue.queue.clear()
+                self.new_data_to_show_queue.put({"reconstructed_signal":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
+                with self.new_data_to_save_queue.mutex:
+                    self.new_data_to_save_queue.queue.clear()
+                self.new_data_to_save_queue.put({"oscilloscope_signal":self.bpm.v_arr,
+                "reconstructed_signal":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
+
 
 class App:
     def __init__(self):
-        self.new_data_queue = queue.LifoQueue(1)
+        self.new_data_to_show_queue = queue.LifoQueue(1)
+        self.new_data_to_save_queue = queue.LifoQueue(1)
 
     def init_signal_transfer_line(self,freqs):
-        cwd = os.getcwd()
+        #cwd = os.getcwd()
+        def resource_path(relative_path):
+            """ Get absolute path to resource, works for dev and for PyInstaller """
+            try:
+                # PyInstaller creates a temp folder and stores path in _MEIPASS
+                base_path = sys._MEIPASS
+            except:
+                base_path = os.environ.get("_MEIPASS2",os.path.abspath("."))
+            return os.path.join(base_path, relative_path)
         file_names = ["TRACE40.csv","TRACE41.csv","TRACE15.csv","TRACE16.csv","TRACE20.csv","TRACE21.csv"]
-        p0,p1,p2,p3,p4,p5 = [os.path.join(cwd,"signal_transfer_line_data",fn) for fn in file_names]
+        p0,p1,p2,p3,p4,p5 = [resource_path(os.path.join("signal_transfer_line_data",fn)) for fn in file_names]
         amplifier = Amplifier(p0,p1,2.7,True,True,True)
         cable = Cable(p2,p3,p4,p5,2*0.229952e3,0.26,True,True,True)
         # Test with no attenuation or dispersion:
@@ -83,6 +101,8 @@ class App:
     def init_control_panel(self):
         self.control_panel_canvas = tkinter.Canvas(self.root, width = 1000, height = 300)
         self.control_panel_canvas.pack()
+
+        # X-Y lims:
         self.x_lim_min = tkinter.Entry (self.root) 
         self.x_lim_min.insert(0,"{:.3f}".format(self.ax.get_xlim()[0]))
         self.control_panel_canvas.create_window(100, 100, window=self.x_lim_min)
@@ -103,21 +123,42 @@ class App:
         self.change_xy_lim_button = tkinter.Button(text='Apply changes', command=self.change_xy_lim)
         self.control_panel_canvas.create_window(175, 150, window=self.change_xy_lim_button)
 
+        # FWHM:
         self.control_panel_canvas.create_window(500, 30, window=tkinter.Label(self.root, text="FWHM, ns"))
         self.fwhm_textvariable = tkinter.StringVar()
         self.fwhm_label = tkinter.Label(self.root, textvariable = self.fwhm_textvariable)
         self.control_panel_canvas.create_window(500, 50, window=self.fwhm_label)
 
         # Saving file window:
-        self.saved_file_folder = tkinter.Entry (self.root) 
-        self.saved_file_folder.insert(0,"my_folder")
-        self.control_panel_canvas.create_window(700, 50, window=self.saved_file_folder)
-        self.control_panel_canvas.create_window(700, 30, window=tkinter.Label(self.root, text="Waveforms are saved to:"))
-        self.save_file_button = tkinter.Button(text='Save file', command=self.save_file)
-        self.control_panel_canvas.create_window(700, 150, window=self.save_file_button)
+        self.saved_file_folder = tkinter.Entry (self.root,width=50) 
+        self.saved_file_folder.insert(0,"bunch_profile_meas_{}".format(datetime.datetime.now().strftime("%m-%d-%Y")))
+        self.control_panel_canvas.create_window(800, 50, window=self.saved_file_folder)
+        self.control_panel_canvas.create_window(800, 30, window=tkinter.Label(self.root, text="Waveforms are saved to:"))
+        self.save_file_button = tkinter.Button(text='Save waveform', command=self.save_file)
+        self.control_panel_canvas.create_window(800, 150, window=self.save_file_button)
+
+    def prep_data_to_save(self,data_to_save_dict):
+        return pd.DataFrame({"oscilloscope_signal":data_to_save_dict["oscilloscope_signal"],
+        "reconstructed_signal":data_to_save_dict["reconstructed_signal"]})
 
     def save_file(self):
-        pass
+        t1 = time.time()
+        while True:
+            if not self.new_data_to_save_queue.empty():
+                new_data_to_save = self.new_data_to_save_queue.get()
+                df = self.prep_data_to_save(new_data_to_save)
+                t = datetime.datetime.now()
+                folder_name = self.saved_file_folder.get()
+                if not os.path.exists(folder_name):
+                    os.mkdir(folder_name)
+                file_path = os.path.join(folder_name,
+                "bunch_profile_{}.csv".format(t.strftime("%m-%d-%Y_%H_%M_%S_%f")))
+                df.to_csv(file_path)
+                break
+            if time.time()-t1>1:
+                break
+
+
 
     def init_tkinter(self):
         # initialise a window.
@@ -136,11 +177,11 @@ class App:
             pass
 
     def try_update_plot(self):
-         if not self.new_data_queue.empty():
-            new_data = self.new_data_queue.get()
-            chart = new_data["chart"]   
+         if not self.new_data_to_show_queue.empty():
+            new_data = self.new_data_to_show_queue.get()
+            reconstructed_signal = new_data["reconstructed_signal"]   
             fwhm = new_data["fwhm"]
-            self.line.set_ydata(chart)
+            self.line.set_ydata(reconstructed_signal)
             self.fwhm_textvariable.set("{:.3f}".format(fwhm))
             self.ax.set_title("Last updated: {}".format(datetime.datetime.now()))
             self.graph.draw()
@@ -152,7 +193,7 @@ class App:
         self.init_fig(bpm)
         self.init_tkinter()
         self.init_control_panel()
-        t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,self.new_data_queue)
+        t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,self.new_data_to_show_queue,self.new_data_to_save_queue)
         t.start()
         self.root.after(100, self.try_update_plot)
         self.root.mainloop()
@@ -161,4 +202,4 @@ class App:
 
 if __name__ == '__main__':
     app = App()
-    app.run(use_test_data=True)
+    app.run(use_test_data=False)

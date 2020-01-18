@@ -129,7 +129,7 @@ class TestDataGenerator():
         self.dt = dt
         self.revolution_period = revolution_period
         self.n_per = n_per
-        self.time_arr = time_arr = np.arange(0, n_per * self.revolution_period, self.dt)
+        self.time_arr = np.arange(0, n_per * self.revolution_period, self.dt)
 
     def plot_v_arr(self,v_arr,title):
         plt.plot(self.time_arr, v_arr, '-o')
