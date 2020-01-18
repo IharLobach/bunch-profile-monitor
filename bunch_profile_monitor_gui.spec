@@ -4,7 +4,6 @@ block_cipher = None
 
 
 a = Analysis(['bunch_profile_monitor_gui.py'],
-             pathex=['g:\\My Drive\\UHCICAGO\\Thesis\\BunchProfileMonitor'],
              binaries=[],
              hiddenimports=[],
              hookspath=[],
