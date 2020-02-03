@@ -156,9 +156,8 @@ class App:
                 df.to_csv(file_path)
                 break
             if time.time()-t1>1:
+                # Failed to save waveform
                 break
-
-
 
     def init_tkinter(self):
         # initialise a window.
@@ -202,4 +201,4 @@ class App:
 
 if __name__ == '__main__':
     app = App()
-    app.run(use_test_data=False)
+    app.run(use_test_data=True)
