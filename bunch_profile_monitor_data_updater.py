@@ -19,7 +19,7 @@ class bpm_data_updater(threading.Thread):
             if update_successful:
                 with self.new_data_to_show_queue.mutex:
                     self.new_data_to_show_queue.queue.clear()
-                self.new_data_to_show_queue.put({"reconstructed_signal":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
+                self.new_data_to_show_queue.put({"oscilloscope_signal":self.bpm.v_arr,"reconstructed_signal":self.bpm.reconstructed_signal,"fwhm":self.bpm.fwhm})
                 with self.new_data_to_save_queue.mutex:
                     self.new_data_to_save_queue.queue.clear()
                 self.new_data_to_save_queue.put({"oscilloscope_signal":self.bpm.v_arr,
