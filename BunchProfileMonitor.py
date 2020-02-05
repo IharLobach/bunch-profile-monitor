@@ -32,6 +32,10 @@ class BunchProfileMonitor:
     @property
     def reconstructed_signal(self):
         return self.__reconstructed_signal
+    
+    @property
+    def time_arr(self):
+        return np.arange(0,self.data_len*self.dt,self.dt)
 
     def __update_data_testing(self):
         v_arr = [0.00255744, 0.00191747, 0.00255744, 0.00191747, 0.00191747, 0.00191747, 0.00191747, 0.00255744, 0.00127749,
@@ -113,13 +117,7 @@ class BunchProfileMonitor:
         self.__reconstructed_signal = np.fft.irfft(self.fourier_transformed_signal/self.transmission_coefs,self.data_len).real
         return self.reconstructed_signal
 
-    def calc_fwhm(self):
-        average_level = np.mean(self.reconstructed_signal)
-        min_level = min(self.reconstructed_signal)
-        half_level = (min_level+average_level)/2
-        y = self.reconstructed_signal - half_level
-        y_01 = np.where(y<0,1,0)
-        self.fwhm = sum(y_01)*self.dt
+
 
 
 
