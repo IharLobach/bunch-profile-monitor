@@ -1,4 +1,5 @@
 import threading
+import time
 class bpm_data_updater(threading.Thread):
     daemon = True
 
@@ -12,6 +13,7 @@ class bpm_data_updater(threading.Thread):
 
     def run(self):
         while True:
+            time.sleep(0.5)
             update_successful = self.bpm.update_data(testing=self.use_test_data)
             self.bpm.perform_fft()
             self.bpm.perform_signal_reconstruction()
