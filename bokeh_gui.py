@@ -15,6 +15,7 @@ in your browser.
 
 '''
 import numpy as np
+import json
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
@@ -43,7 +44,8 @@ from output_formatting import length_output
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)
 
-use_test_data = True
+with open("config.json") as f:
+    use_test_data = json.load(f)["use_test_data"]
 bpm,signal_transfer_line = init_bpm_signal_transfer_line(use_test_data)
 t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,new_data_to_show_queue,new_data_to_save_queue)
 t.start()

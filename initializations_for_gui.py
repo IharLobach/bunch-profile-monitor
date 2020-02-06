@@ -2,6 +2,7 @@ from BunchProfileMonitor import BunchProfileMonitor
 from CableAmplifierTransferCoefs import Amplifier,Cable,SignalTransferLine,HeliaxCableHalfInch
 from tcp_communication_with_scope import ConnectionToScope
 import os
+import json
 
 def init_signal_transfer_line(freqs):
     cwd = os.getcwd()
@@ -16,7 +17,9 @@ def init_signal_transfer_line(freqs):
 
 def init_bpm_signal_transfer_line(useTestData):
         conn = ConnectionToScope()
-        bpm = BunchProfileMonitor(connection_to_scope=conn,dt=0.1)
+        with open("config.json") as f:
+            dt_ns = json.load(f)["dt_ns"]
+        bpm = BunchProfileMonitor(connection_to_scope=conn,dt=dt_ns)
         attempt = 0
         while True:
             if attempt > 5:
