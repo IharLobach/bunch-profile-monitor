@@ -24,12 +24,13 @@ from initializations_for_gui import init_bpm_signal_transfer_line
 from data_logging import save_full_plot_data
 from bunch_length_estimators import calc_fwhm,calc_rms
 from output_formatting import length_output
+from config_requests import get_from_config
 
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)
 
-with open("config.json") as f:
-    use_test_data = json.load(f)["use_test_data"]
+
+use_test_data = get_from_config("use_test_data")
 bpm,signal_transfer_line = init_bpm_signal_transfer_line(use_test_data)
 t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,new_data_to_show_queue,new_data_to_save_queue)
 t.start()
