@@ -1,19 +1,3 @@
-''' Present an interactive function explorer with slider widgets.
-
-Scrub the sliders to change the properties of the ``sin`` curve, or
-type into the title text box to update the title of the plot.
-
-Use the ``bokeh serve`` command to run the example by executing:
-
-    bokeh serve sliders.py
-
-at your command prompt. Then navigate to the URL
-
-    http://localhost:5006/sliders
-
-in your browser.
-
-'''
 import numpy as np
 import json
 
@@ -60,8 +44,14 @@ def button_save_full_plot_data_callback(event):
     save_full_plot_data(new_data_to_save_queue,saved_files_folder_text.value)
 button_save_full_plot_data.on_event(ButtonClick,button_save_full_plot_data_callback)
 
-rms_calculation_min_text = TextInput(title="RMS calc. left limit", value="80",width=145)
-rms_calculation_max_text = TextInput(title="RMS calc. right limit", value="110",width=145)
+
+x0 = bpm.time_arr
+x0max = max(x0)
+x0min = min(x0)
+minVal = length_output(x0min+0.2*(x0max-x0min))
+maxVal = length_output(x0min+0.8*(x0max-x0min))
+rms_calculation_min_text = TextInput(title="RMS calc. left limit", value=minVal,width=145)
+rms_calculation_max_text = TextInput(title="RMS calc. right limit", value=maxVal,width=145)
 
 #table
 rms_left_lim = float(rms_calculation_min_text.value)

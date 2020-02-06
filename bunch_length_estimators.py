@@ -16,7 +16,7 @@ def calc_fwhm(reconstructed_signal,time_arr,left_lim,right_lim):
         fwhm = sum(y_01)*dt
         return fwhm
     except:
-        return "NaN"
+        return "nan"
 
 def calc_rms(reconstructed_signal,time_arr,left_lim,right_lim):
     try:
@@ -32,4 +32,4 @@ def calc_rms(reconstructed_signal,time_arr,left_lim,right_lim):
         rms = np.sqrt(variance)
         return rms
     except:
-        return "NaN"
+        return "nan"
