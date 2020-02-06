@@ -38,6 +38,7 @@ from bunch_profile_monitor_data_updater import bpm_data_updater
 from initializations_for_gui import init_bpm_signal_transfer_line
 from data_logging import save_full_plot_data
 from bunch_length_estimators import calc_fwhm,calc_rms
+from output_formatting import length_output
 
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)
@@ -63,13 +64,15 @@ rms_calculation_max_text = TextInput(title="RMS calc. right limit", value="110",
 #table
 rms_left_lim = float(rms_calculation_min_text.value)
 rms_right_lim = float(rms_calculation_max_text.value)
+fwhm  = calc_fwhm(bpm.reconstructed_signal,bpm.time_arr,
+        rms_left_lim,rms_right_lim
+        )
+rms = calc_rms(bpm.reconstructed_signal,bpm.time_arr,
+        rms_left_lim,rms_right_lim)
+
 table_data = dict(
         quantities=["FWHM, ns","RMS, ns"],
-        values=["{:.3f}".format(calc_fwhm(bpm.reconstructed_signal,bpm.time_arr,
-        rms_left_lim,rms_right_lim
-        )),
-        "{:.3f}".format(calc_rms(bpm.reconstructed_signal,bpm.time_arr,
-        rms_left_lim,rms_right_lim))],
+        values=[length_output(fwhm),length_output(rms)],
     )
 table_source = ColumnDataSource(table_data)
 
@@ -144,7 +147,7 @@ def try_update_plot():
         rms = calc_rms(reconstructed_signal,bpm.time_arr,rms_left_lim,rms_right_lim)
         table_data = dict(
         quantities=["FWHM, ns","RMS, ns"],
-        values=["{:.3f}".format(fwhm),"{:.3f}".format(rms)])
+        values=[length_output(fwhm),length_output(rms)])
         table_source.data = table_data
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
