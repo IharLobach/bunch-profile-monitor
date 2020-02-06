@@ -57,8 +57,8 @@ def button_save_full_plot_data_callback(event):
     save_full_plot_data(new_data_to_save_queue,saved_files_folder_text.value)
 button_save_full_plot_data.on_event(ButtonClick,button_save_full_plot_data_callback)
 
-rms_calculation_min_text = TextInput(title="RMS calc. left limit", value="22",width=145)
-rms_calculation_max_text = TextInput(title="RMS calc. right limit", value="26",width=145)
+rms_calculation_min_text = TextInput(title="RMS calc. left limit", value="80",width=145)
+rms_calculation_max_text = TextInput(title="RMS calc. right limit", value="110",width=145)
 
 #table
 rms_left_lim = float(rms_calculation_min_text.value)
@@ -145,13 +145,13 @@ def try_update_plot():
         table_data = dict(
         quantities=["FWHM, ns","RMS, ns"],
         values=["{:.3f}".format(fwhm),"{:.3f}".format(rms)])
-        table_source = ColumnDataSource(table_data)
-        data_table.source=table_source
+        table_source.data = table_data
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
         reconstructed_line_source.data = dict(x=x, y=y)
         oscilloscope_line_source.data = dict(x=x,y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
+        #print("Last updated: {}".format(datetime.datetime.now()))
 
 curdoc().add_periodic_callback(try_update_plot, 500)
 

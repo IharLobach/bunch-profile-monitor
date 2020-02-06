@@ -8,10 +8,10 @@ app = Flask(__name__)
 @app.route('/', methods=['GET'])
 def index():
     # generate a script to load the customized session
-    script = server_session(session_id="514", url='http://localhost:5006/bokeh_gui')
+    script = server_session(session_id="0", url='http://localhost:5006/bokeh_gui')
 
     # use the script in the rendered page
     return render_template("index.html", script=script, template="Flask")
 
 if __name__ == '__main__':
-    app.run(port=8080,debug=True)
+    app.run(port=8080,host="0.0.0.0")
