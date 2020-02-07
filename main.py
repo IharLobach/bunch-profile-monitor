@@ -49,8 +49,8 @@ button_save_full_plot_data.on_event(ButtonClick,button_save_full_plot_data_callb
 x0 = bpm.time_arr
 x0max = max(x0)
 x0min = min(x0)
-minVal = length_output(x0min+0.2*(x0max-x0min))
-maxVal = length_output(x0min+0.8*(x0max-x0min))
+minVal = length_output(get_from_config("left_rms_calc_limit"))#length_output(x0min+0.2*(x0max-x0min))
+maxVal = length_output(get_from_config("right_rms_calc_limit"))#length_output(x0min+0.8*(x0max-x0min))
 rms_calculation_min_text = TextInput(title="RMS calc. left limit", value=minVal,width=145)
 rms_calculation_max_text = TextInput(title="RMS calc. right limit", value=maxVal,width=145)
 
