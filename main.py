@@ -25,6 +25,8 @@ from data_logging import save_full_plot_data
 from bunch_length_estimators import calc_fwhm,calc_rms
 from output_formatting import length_output
 from config_requests import get_from_config
+import data_logging
+from data_logging import data_logger_cleaner
 
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)
@@ -34,6 +36,12 @@ use_test_data = get_from_config("use_test_data")
 bpm,signal_transfer_line = init_bpm_signal_transfer_line(use_test_data)
 t = bpm_data_updater(bpm, use_test_data, signal_transfer_line,new_data_to_show_queue,new_data_to_save_queue)
 t.start()
+
+dlc_thread = data_logger_cleaner(logging_length=get_from_config("logging_length"),
+cleaning_period_min=get_from_config("cleaning_period_min"))
+dlc_thread.start()
+
+
 
 
 
@@ -142,6 +150,7 @@ def try_update_plot():
         quantities=["FWHM, ns","RMS, ns"],
         values=[length_output(fwhm),length_output(rms)])
         table_source.data = table_data
+        data_logging.add_record((fwhm,rms))
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
         reconstructed_line_source.data = dict(x=x, y=y)

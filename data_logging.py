@@ -2,6 +2,45 @@ import pandas as pd
 import datetime
 import time
 import os
+import sqlite3
+import threading
+
+def db_communication(func):
+    def wrapper(*args,**kwargs):
+        conn = sqlite3.connect('bunch-profile-monitor/log.db')
+        c = conn.cursor()
+        func(c,*args,**kwargs)
+        # Save (commit) the changes
+        conn.commit()
+        conn.close()
+    return wrapper
+
+@db_communication
+def add_record(c,tp):
+    c.execute('INSERT INTO log VALUES (strftime("%Y-%m-%d %H:%M:%f","now","localtime"),?,?)', tp)
+
+@db_communication
+def delete_old_rows(c,logging_length):
+    c.execute('DELETE FROM log WHERE date < datetime("now","localtime", "-{}")'.format(logging_length))
+
+class data_logger_cleaner(threading.Thread):
+    daemon = True
+    
+    def __init__(self,logging_length,cleaning_period_min):
+        super().__init__()
+        self.logging_length = logging_length
+        self.cleaning_period_min = cleaning_period_min
+    def run(self):
+        while True:
+            time.sleep(self.cleaning_period_min*60)
+            delete_old_rows(self.logging_length)
+    
+    
+
+    
+
+
+
 
 
 def prep_data_to_save(data_to_save_dict):

@@ -3,5 +3,7 @@
     "use_test_data":true,
     "url":"http://localhost:5006/bunch-profile-monitor?bokeh-session-id=0",
     "left_rms_calc_limit":22,
-    "right_rms_calc_limit":26
+    "right_rms_calc_limit":26,
+    "logging_length":"1 day",
+    "cleaning_period_min":10
 }
