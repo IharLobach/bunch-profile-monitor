@@ -4,6 +4,7 @@ import time
 import os
 import sqlite3
 import threading
+import socket
 
 def db_communication(func):
     def wrapper(*args,**kwargs):
@@ -36,6 +37,15 @@ class data_logger_cleaner(threading.Thread):
             delete_old_rows(self.logging_length)
     
     
+class ACNET_logger():
+    def __init__(self,UDP_IP,UDP_PORT):
+        self.UDP_IP = UDP_IP
+        self.UDP_PORT = UDP_PORT
+        self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    def send_to_ACNET(self,fwhm,rms):
+        MESSAGE = "{}|{}".format(fwhm,rms)
+        self.sock.sendto(MESSAGE.encode(), (self.UDP_IP, self.UDP_PORT))
+
 
     
 

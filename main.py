@@ -41,6 +41,8 @@ dlc_thread = data_logger_cleaner(logging_length=get_from_config("logging_length"
 cleaning_period_min=get_from_config("cleaning_period_min"))
 dlc_thread.start()
 
+acnet_logger = data_logging.ACNET_logger(get_from_config("ip"),5005)
+
 
 
 
@@ -151,6 +153,7 @@ def try_update_plot():
         values=[length_output(fwhm),length_output(rms)])
         table_source.data = table_data
         data_logging.add_record((fwhm,rms))
+        acnet_logger.send_to_ACNET(fwhm,rms)
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
         reconstructed_line_source.data = dict(x=x, y=y)
