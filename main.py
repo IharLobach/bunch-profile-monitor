@@ -41,7 +41,7 @@ dlc_thread = data_logger_cleaner(logging_length=get_from_config("logging_length"
 cleaning_period_min=get_from_config("cleaning_period_min"))
 dlc_thread.start()
 
-acnet_logger = data_logging.ACNET_logger(get_from_config("ip"),5005)
+acnet_logger = data_logging.ACNET_logger(get_from_config("clx_ip"),5005)
 
 
 
