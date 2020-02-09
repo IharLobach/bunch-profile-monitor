@@ -1,5 +1,6 @@
 import sqlite3
-conn = sqlite3.connect('log.db')
+import os
+conn = sqlite3.connect(os.path.join(os.getcwd(),"bunch-profile-monitor","log.db"))
 c = conn.cursor()
 
 # Create table
