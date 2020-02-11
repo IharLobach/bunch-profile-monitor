@@ -26,9 +26,6 @@ class ConnectionToScope():
             received3 = bytes(received2).strip()
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
-            # for now let's assume the time interval between samples is 0.2 ns
-            # delta_t = 0.2
-            # time_arr = delta_t * np.arange(len(v_arr))
             return v_arr
 
 if __name__=="__main__":

@@ -1,5 +1,5 @@
-from BunchProfileMonitor import BunchProfileMonitor
-from CableAmplifierTransferCoefs import Amplifier,Cable,SignalTransferLine,HeliaxCableHalfInch
+from bunch_profile_monitor import BunchProfileMonitor
+from cable_amplifier_transfer_coefs import Amplifier,Cable,SignalTransferLine,HeliaxCableHalfInch
 from tcp_communication_with_scope import ConnectionToScope
 import os
 from config_requests import get_from_config

@@ -9,8 +9,6 @@ from bokeh.events import ButtonClick
 from bokeh.models import DataTable, DateFormatter, TableColumn, Span
 
 
-from BunchProfileMonitor import BunchProfileMonitor
-from CableAmplifierTransferCoefs import Amplifier,Cable,SignalTransferLine,HeliaxCableHalfInch
 from tcp_communication_with_scope import ConnectionToScope
 import datetime
 import threading

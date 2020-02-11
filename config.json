@@ -6,5 +6,5 @@
     "right_rms_calc_limit":26,
     "logging_length":"1 day",
     "cleaning_period_min":10,
-    "ip":"127.0.0.1"
+    "clx_ip":"127.0.0.1"
 }
