@@ -1,10 +1,11 @@
 import socket
 import re
 import numpy as np
+from config_requests import get_from_config
 
 class ConnectionToScope():
     timeout = 1#sec
-    HOST, PORT = "131.225.118.120", 1861
+    HOST, PORT = get_from_config("oscilloscope_ip"), get_from_config("oscilloscope_port")
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?"
     quiery_waveform = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE"
     def get_waveform(self):
