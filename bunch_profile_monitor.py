@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
 
 
 class BunchProfileMonitor:
@@ -36,7 +37,7 @@ class BunchProfileMonitor:
 
     @property
     def time_arr(self):
-        return np.arange(0,self.data_len*self.dt, self.dt)
+        return np.arange(0, self.data_len*self.dt, self.dt)
 
     def __update_data_testing(self):
         v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
