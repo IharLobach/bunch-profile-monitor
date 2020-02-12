@@ -1,6 +1,10 @@
 import numpy as np
 
 
+class ErrorFWHMTooManyIntersections(Exception):
+    pass
+
+
 def calc_average_level(reconstructed_signal, time_arr, left_lim, right_lim):
     left = reconstructed_signal[time_arr < left_lim]
     right = reconstructed_signal[time_arr > right_lim]
@@ -17,16 +21,41 @@ def nan_support(func):
     return wrapper
 
 
+def get_signal_within_lims(y, time_arr, left_lim, right_lim):
+    time_arr0 = time_arr[time_arr > left_lim]
+    y_within_lims0 = y[time_arr > left_lim]
+    y_within_lims = y_within_lims0[time_arr0 < right_lim]
+    time_arr_within_limits = time_arr0[time_arr0 < right_lim]
+    return time_arr_within_limits, y_within_lims
+
+
+def calc_intersection_time(t1, y1, t2, y2, hm):
+    return t1+(hm-y1)*(t2-t1)/(y2-y1)
+
+
 @nan_support
 def calc_fwhm(reconstructed_signal, time_arr, left_lim, right_lim):
     average_level = calc_average_level(reconstructed_signal, time_arr,
                                        left_lim, right_lim)
-    min_level = min(reconstructed_signal)
+    t, signal_within_lims = \
+        get_signal_within_lims(reconstructed_signal, time_arr,
+                               left_lim, right_lim)
+    min_level = min(signal_within_lims)
     half_level = (min_level+average_level)/2
-    y = reconstructed_signal - half_level
-    y_01 = np.where(y < 0, 1, 0)
-    dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
-    fwhm = sum(y_01)*dt
+    y = signal_within_lims - half_level
+    drop_last = y[:-1]
+    drop_first = y[1:]
+    mult = drop_last*drop_first
+    intersections = np.argwhere(mult < 0).transpose()[0]
+    if len(intersections) > 2:
+        raise ErrorFWHMTooManyIntersections("FWHM: more than 2 intesrestions"
+                                            " with half max level.")
+    left_idx, right_idx = intersections
+    left_t = calc_intersection_time(t[left_idx], y[left_idx],
+                                    t[left_idx+1], y[left_idx+1], 0)
+    right_t = calc_intersection_time(t[right_idx], y[right_idx],
+                                     t[right_idx+1], y[right_idx+1], 0)
+    fwhm = right_t-left_t
     return fwhm
 
 
@@ -35,9 +64,10 @@ def calc_rms(reconstructed_signal, time_arr, left_lim, right_lim):
     average_level = calc_average_level(reconstructed_signal, time_arr,
                                        left_lim, right_lim)
     y = reconstructed_signal-average_level
-    y_within_lims0 = np.where(time_arr > left_lim, y, 0)
-    y_within_lims = np.where(time_arr < right_lim, y_within_lims0, 0)
-    time_center = np.average(time_arr, weights=-y_within_lims)
-    variance = np.average((time_arr-time_center)**2, weights=-y_within_lims)
+    time_arr_within_lims, y_within_lims = \
+        get_signal_within_lims(y, time_arr, left_lim, right_lim)
+    time_center = np.average(time_arr_within_lims, weights=-y_within_lims)
+    variance = np.average((time_arr_within_lims-time_center)**2,
+                          weights=-y_within_lims)
     rms = np.sqrt(variance)
     return rms
