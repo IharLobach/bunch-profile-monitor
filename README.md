@@ -7,7 +7,7 @@ The program talks to an oscilloscope, to which the signal from the wall-current 
 Tested on Ubuntu 18.04 and Raspbian:
 ```
 sudo apt install python3
-sudo apt isntall python3-pip
+sudo apt install python3-pip
 pip3 install pandas matplotlib bokeh flask
 git clone https://github.com/IharLobach/bunch-profile-monitor.git
 cd bunch-profile-monitor
