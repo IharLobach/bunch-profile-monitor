@@ -159,7 +159,7 @@ def try_update_plot():
     if not new_data_to_show_queue.empty():
         new_data = new_data_to_show_queue.get()
         reconstructed_signal = new_data["reconstructed_signal"] 
-        original_signal =   new_data["oscilloscope_signal"]
+        original_signal = new_data["oscilloscope_signal"]
         rms_left_lim = float(rms_calculation_min_text.value)
         rms_right_lim = float(rms_calculation_max_text.value)
         fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
@@ -175,7 +175,7 @@ def try_update_plot():
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
         reconstructed_line_source.data = dict(x=x, y=y)
-        oscilloscope_line_source.data = dict(x=x,y=original_signal)
+        oscilloscope_line_source.data = dict(x=x, y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
 
 
