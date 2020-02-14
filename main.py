@@ -9,7 +9,7 @@ from bokeh.events import ButtonClick
 from bokeh.models import DataTable, DateFormatter, TableColumn, Span
 
 
-from tcp_communication_with_scope import ConnectionToScope
+from server_modules.tcp_communication_with_scope import ConnectionToScope
 import datetime
 import threading
 import queue
@@ -17,14 +17,15 @@ import pandas as pd
 import os
 import sys
 import time
-from bunch_profile_monitor_data_updater import bpm_data_updater
-from initializations_for_gui import init_bpm_signal_transfer_line
-from data_logging import save_full_plot_data
-from bunch_length_estimators import calc_fwhm, calc_rms
-from output_formatting import length_output
-from config_requests import get_from_config
-import data_logging
-from data_logging import data_logger_cleaner
+from server_modules.bunch_profile_monitor_data_updater import bpm_data_updater
+from server_modules.initializations_for_gui import \
+     init_bpm_signal_transfer_line
+from server_modules.data_logging import save_full_plot_data
+from physics_engine.bunch_length_estimators import calc_fwhm, calc_rms
+from server_modules.output_formatting import length_output
+from server_modules.config_requests import get_from_config
+import server_modules.data_logging as data_logging
+from server_modules.data_logging import data_logger_cleaner
 
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)

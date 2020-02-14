@@ -1,6 +1,6 @@
 import os
 from flask import Flask, redirect
-from config_requests import get_from_config
+from server_modules.config_requests import get_from_config
 
 app = Flask(__name__)
 

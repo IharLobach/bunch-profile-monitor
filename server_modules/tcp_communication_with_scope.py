@@ -1,7 +1,7 @@
 import socket
 import re
 import numpy as np
-from config_requests import get_from_config
+from server_modules.config_requests import get_from_config
 
 
 class ConnectionToScope():

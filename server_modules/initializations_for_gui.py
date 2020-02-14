@@ -1,9 +1,9 @@
 import os
-from bunch_profile_monitor import BunchProfileMonitor
-from cable_amplifier_transfer_coefs import Amplifier, Cable, \
+from physics_engine.bunch_profile_monitor import BunchProfileMonitor
+from physics_engine.cable_amplifier_transfer_coefs import Amplifier, Cable, \
      SignalTransferLine, HeliaxCableHalfInch
-from tcp_communication_with_scope import ConnectionToScope
-from config_requests import get_from_config
+from server_modules.tcp_communication_with_scope import ConnectionToScope
+from server_modules.config_requests import get_from_config
 
 
 def init_signal_transfer_line(freqs):

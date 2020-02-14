@@ -18,8 +18,8 @@ def db_communication(func):
             conn.commit()
             conn.close()
         except Exception as e:
-            print('''Exception happened while communicating
-             with the database at {}'''.format(datetime.datetime.now()))
+            print("Exception happened while communicating"
+                  " with the database at {}".format(datetime.datetime.now()))
             print(e)
     return wrapper
 
