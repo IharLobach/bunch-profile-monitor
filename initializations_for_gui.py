@@ -32,6 +32,6 @@ def init_bpm_signal_transfer_line(useTestData):
         attempt += 1
     bpm.perform_fft()
     signal_transfer_line = init_signal_transfer_line(bpm.fourier_frequencies)
-    bpm.transmission_coefs = signal_transfer_line.TransmissionCoefs
+    bpm.transmission_coefs = signal_transfer_line.transmission_coefs
     bpm.perform_signal_reconstruction()
     return bpm, signal_transfer_line

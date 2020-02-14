@@ -6,6 +6,7 @@ c = conn.cursor()
 
 # Create table
 c.execute('''CREATE TABLE log
-            (date text, FWHM real, RMS real)''')
+            (date text, FWHM real, RMS real,
+            LeftLim real, RightLim real, CutOff real)''')
 conn.commit()
 conn.close()

@@ -5,23 +5,23 @@ import numpy as np
 class TransmissionElement():
     def __init__(self, extrapolate_left=False, extrapolate_right=False):
         self.freqs0 = [None]
-        self.TransmissionCoefs0 = [None]
+        self.transmission_coefs0 = [None]
         self.freqs = [None]
         self.extrapolate_left = extrapolate_left
         self.extrapolate_right = extrapolate_right
-        self.TransmissionCoefs = None
+        self.transmission_coefs = None
 
     def prepend_01_point(self):
         self.freqs0 = np.concatenate((np.array([0]), self.freqs0))
-        self.TransmissionCoefs0 = np.concatenate((np.array([1]),
-                                                 self.TransmissionCoefs0))
+        self.transmission_coefs0 = np.concatenate((np.array([1]),
+                                                   self.transmission_coefs0))
 
     def resample(self, freqs):
         left = None
         right = None
         if freqs[0]<self.freqs0[0]:
             if self.extrapolate_left:
-                left = self.TransmissionCoefs0[0]
+                left = self.transmission_coefs0[0]
             else:
                 raise ValueError(
                     "New frequency array's lower limit is below the minimum"
@@ -31,7 +31,7 @@ class TransmissionElement():
                     " TransmissionElement to True.")
         if freqs[-1] > self.freqs0[-1]:
             if self.extrapolate_right:
-                right = self.TransmissionCoefs0[-1]
+                right = self.transmission_coefs0[-1]
             else:
                 raise ValueError(
                     "New frequency array's upper limit is above the maximum"
@@ -39,18 +39,18 @@ class TransmissionElement():
                     " Adjust the new frequency array, or use extrapolation by"
                     " setting attribute extrapolate_left of this"
                     " TransmissionElement to True.")
-        self.TransmissionCoefs = np.interp(freqs, self.freqs0,
-                                           self.TransmissionCoefs0, left=left,
+        self.transmission_coefs = np.interp(freqs, self.freqs0,
+                                           self.transmission_coefs0, left=left,
                                            right=right)
         self.freqs = freqs
 
     @property
     def TransmissionCoefAbs(self):
-        return np.absolute(self.TransmissionCoefs)
+        return np.absolute(self.transmission_coefs)
 
     @property
     def TransmissionCoefPhases(self):
-        return np.angle(self.TransmissionCoefs, deg=True)
+        return np.angle(self.transmission_coefs, deg=True)
 
 
 class Amplifier(TransmissionElement):
@@ -66,10 +66,10 @@ class Amplifier(TransmissionElement):
                             self.phase_shifts.iloc[:, 1].values))
         self.G = exp_factor * np.power(10, self.dBs.iloc[:, 1].values / 20)
         aux_var = np.exp(2j * np.pi * self.T_amplifier_ns * self.freqs0)
-        self.TransmissionCoefs0 = self.G * aux_var
+        self.transmission_coefs0 = self.G * aux_var
         if prepend_01_point:
             self.prepend_01_point()
-        # initializing self.freqs and self.TransmissionCoefs:
+        # initializing self.freqs and self.transmission_coefs:
         self.resample(self.freqs0)
 
 
@@ -104,12 +104,12 @@ class Cable(TransmissionElement):
             * np.exp(2j*np.pi*self.T_cable_ns*self.freqs0)
         self.TransmissionCoefs_open = self.G_open \
             * np.exp(2j*np.pi*self.T_cable_ns*self.freqs0)
-        self.TransmissionCoefs0 = np.sqrt(
+        self.transmission_coefs0 = np.sqrt(
             (self.TransmissionCoefs_short+self.TransmissionCoefs_open) / 2
             * np.exp(2j*np.pi*self.T_cor_ns*self.freqs0))
         if prepend_01_point:
             self.prepend_01_point()
-        # initializing self.freqs and self.TransmissionCoefs:
+        # initializing self.freqs and self.transmission_coefs:
         self.resample(self.freqs0)
 
 
@@ -122,7 +122,7 @@ class CableModel:
         self.z = z
         self.k1 = k1
         self.k2 = k2
-        self.TransmissionCoefs = None
+        self.transmission_coefs = None
         self.freqs = None
 
     def dB_to_linear(self, dB):
@@ -135,7 +135,7 @@ class CableModel:
                                  - self.k2 * self.z * f)
 
     def resample(self, freqs):
-        self.TransmissionCoefs = self.calc_attenuation(freqs)
+        self.transmission_coefs = self.calc_attenuation(freqs)
         self.freqs = freqs
 
 
@@ -152,25 +152,25 @@ class ColemanCableRG58(CableModel):
 class SignalTransferLine():
     def __init__(self, transmission_elements, freqs=None):
         self.transmission_elements = transmission_elements
-        self.TransmissionCoefs = None
+        self.transmission_coefs = None
         if freqs is not None:
             self.resample(freqs)
 
     @property
     def TransmissionCoefAbs(self):
-        return np.absolute(self.TransmissionCoefs)
+        return np.absolute(self.transmission_coefs)
 
     @property
     def TransmissionCoefPhases(self):
-        return np.angle(self.TransmissionCoefs, deg=True)
+        return np.angle(self.transmission_coefs, deg=True)
 
     def resample(self, freqs):
         res = 1
         for el in self.transmission_elements:
             el.resample(freqs)
-            res = res*el.TransmissionCoefs
+            res = res*el.transmission_coefs
         self.freqs = freqs
-        self.TransmissionCoefs = res
+        self.transmission_coefs = res
 
 
 if __name__ == "__main__":

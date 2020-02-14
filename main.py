@@ -151,7 +151,7 @@ def inputs_callback(attrname, old, new):
     rms_calc_right_span.location = rms_calc_right
     bpm.transmission_coefs = \
         np.where(bpm.fourier_frequencies < cutoff_slider.value,
-                 signal_transfer_line.TransmissionCoefs, 1)
+                 signal_transfer_line.transmission_coefs, 1)
 
 
 for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
@@ -182,7 +182,8 @@ def try_update_plot():
             quantities=["FWHM, ns", "RMS, ns"],
             values=[length_output(fwhm), length_output(rms)])
         table_source.data = table_data
-        data_logging.add_record((fwhm, rms))
+        data_logging.add_record((fwhm, rms, rms_left_lim, rms_right_lim,
+                                 cutoff_slider.value))
         acnet_logger.send_to_ACNET(fwhm, rms)
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal
