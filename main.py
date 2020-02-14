@@ -94,7 +94,8 @@ columns = [
         TableColumn(field="quantities", title="Quantity"),
         TableColumn(field="values", title="Value"),
     ]
-data_table = DataTable(source=table_source, columns=columns, width=300)
+data_table = DataTable(source=table_source, columns=columns,
+                       width=300, height=80)
 
 
 x0 = bpm.time_arr
@@ -135,20 +136,31 @@ rms_calc_right_span = Span(location=rms_calc_right,
 plot.add_layout(rms_calc_right_span)
 
 
-def update_rms_calc_limits(attrname, old, new):
+cutoff_slider = Slider(
+    start=0,
+    end=max(bpm.fourier_frequencies),
+    value=max(bpm.fourier_frequencies),
+    step=.1,
+    title="Frequency Cutoff for Transmission Coefficients, GHz")
+
+
+def inputs_callback(attrname, old, new):
     rms_calc_left = float(rms_calculation_min_text.value)
     rms_calc_right = float(rms_calculation_max_text.value)
     rms_calc_left_span.location = rms_calc_left
     rms_calc_right_span.location = rms_calc_right
+    bpm.transmission_coefs = \
+        np.where(bpm.fourier_frequencies < cutoff_slider.value,
+                 signal_transfer_line.TransmissionCoefs, 1)
 
 
-for w in [rms_calculation_min_text, rms_calculation_max_text]:
-    w.on_change('value', update_rms_calc_limits)
+for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
+    w.on_change('value', inputs_callback)
 
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
-                rms_calc_row, data_table)
+                rms_calc_row, data_table, cutoff_slider)
 
 
 curdoc().add_root(row(inputs, plot))
