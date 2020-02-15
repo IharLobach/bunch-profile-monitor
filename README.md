@@ -8,7 +8,7 @@ Tested on Ubuntu 18.04 LTS and Raspbian 10 (buster):
 ```
 $ sudo apt install python3
 $ sudo apt install python3-pip
-$ pip3 install pandas matplotlib bokeh flask
+$ pip3 install pandas matplotlib bokeh flask sqlite3
 $ git clone https://github.com/IharLobach/bunch-profile-monitor.git
 $ cd bunch-profile-monitor
 $ mv config_localhost.json config.json
