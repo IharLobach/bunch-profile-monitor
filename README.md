@@ -17,3 +17,5 @@ $ python3 -m bokeh serve bunch-profile-monitor
 ```
 A new tab should open in a browser window.
 
+![Demo](demo.gif)
+
