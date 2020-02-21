@@ -26,6 +26,7 @@ from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
 from server_modules.data_logging import data_logger_cleaner
+from server_modules.tcp_communication_with_scope import ConnectionToScope
 
 new_data_to_show_queue = queue.LifoQueue(1)
 new_data_to_save_queue = queue.LifoQueue(1)
@@ -116,9 +117,9 @@ plot = figure(plot_height=400, plot_width=700,
               sizing_mode="scale_both")
 
 plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
-          line_alpha=0.6, color="green",legend_label="Original")
+          line_alpha=0.6, color="green", legend_label="Original")
 plot.line('x', 'y', source=reconstructed_line_source, line_width=3,
-          line_alpha=0.6, color="red",legend_label="Reconstructed")
+          line_alpha=0.6, color="red", legend_label="Reconstructed")
 plot.legend.location = "bottom_right"
 plot.title.text = "Last updated: {}".format(datetime.datetime.now())
 plot.xaxis.axis_label = "Time, ns"
@@ -135,6 +136,83 @@ rms_calc_right_span = Span(location=rms_calc_right,
                            dimension='height', line_color='red',
                            line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_right_span)
+
+# vertical span of the oscilloscope
+conn = ConnectionToScope()
+offset = conn.get_offset()
+volt_div = conn.get_volt_div()
+half_span = volt_div*4
+top = half_span-offset
+bottom = -offset-half_span
+top_span = Span(location=top,
+                dimension='width', line_color='blue',
+                line_dash='dashed', line_width=3)
+plot.add_layout(top_span)
+bottom_span = Span(location=bottom,
+                   dimension='width', line_color='blue',
+                   line_dash='dashed', line_width=3)
+plot.add_layout(bottom_span)
+
+
+def update_vertical_span():
+    offset = conn.get_offset()
+    volt_div = conn.get_volt_div()
+    half_span = volt_div*4
+    top = half_span-offset
+    bottom = -offset-half_span
+    top_span.location = top
+    bottom_span.location = bottom
+
+
+button_increase = Button(
+    label="Increase",
+    button_type="success",
+    width=300)
+
+
+def button_increase_callback(event):
+    volt_div = (top_span.location-bottom_span.location)/8
+    if volt_div >= 1.25:
+        pass
+    else:
+        conn.set_volt_div(volt_div*2)
+        update_vertical_span()
+
+
+button_increase.on_event(ButtonClick, button_increase_callback)
+
+
+button_decrease = Button(
+    label="Decrease",
+    button_type="success",
+    width=300)
+
+
+def button_decrease_callback(event):
+    volt_div = (top_span.location-bottom_span.location)/8
+    if volt_div <= 0.01:
+        pass
+    else:
+        conn.set_volt_div(volt_div*0.5)
+        update_vertical_span()
+
+
+button_decrease.on_event(ButtonClick, button_decrease_callback)
+
+def check_if_need_update_vertical_span(original_signal):
+    m = min(original_signal)
+    if m > -0.020:
+        return 0
+    elif m < 5.0:
+        return 0
+    elif m < 0.9*bottom_span.location:
+        return 1
+    elif m > 0.9*bottom_span.location*0.5:
+        return -1
+
+
+# end vertical span of the oscilloscope
+
 
 
 cutoff_slider = Slider(
@@ -161,7 +239,7 @@ for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
-                rms_calc_row, data_table, cutoff_slider)
+                rms_calc_row, data_table, cutoff_slider,button_increase,button_decrease)
 
 
 curdoc().add_root(row(inputs, plot))
@@ -191,6 +269,13 @@ def try_update_plot():
         reconstructed_line_source.data = dict(x=x, y=y)
         oscilloscope_line_source.data = dict(x=x, y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
+        vs = check_if_need_update_vertical_span(original_signal)
+        if vs == 1:
+            button_increase_callback(1)
+            print("increased")
+        elif vs == -1:
+            button_decrease_callback(1)
+            print("decreased")
 
 
 curdoc().add_periodic_callback(try_update_plot, 500)

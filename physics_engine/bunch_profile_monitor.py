@@ -60,6 +60,8 @@ class BunchProfileMonitor:
         else:
             try:
                 self.v_arr = self.connection_to_scope.get_waveform()
+                # print("volt_div = ", self.connection_to_scope.get_volt_div())
+                # print("offset = ", self.connection_to_scope.get_offset())
                 return True
             except Exception as e:
                 return False
