@@ -2,6 +2,7 @@ import socket
 import re
 import numpy as np
 from server_modules.config_requests import get_from_config
+import time
 
 
 class ConnectionToScope():
@@ -43,7 +44,12 @@ class ConnectionToScope():
     def get_volt_div(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
-            sock.connect((self.HOST, self.PORT))
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except:
+                    pass
             sock.sendall(self.quiery_volt_div)
             received = b''
             while True:
@@ -56,18 +62,29 @@ class ConnectionToScope():
     def set_volt_div(self, volt_div):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
-            sock.connect((self.HOST, self.PORT))
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except:
+                    pass
             command_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
                 b' LO\n\x81\x01\x00\x00\x00\x00\x00\x13'\
                 b' C3:VOLT_DIV ' + \
                 '{}'.format(volt_div).encode()+b' V\n'
             # print(command_volt_div)
             sock.sendall(command_volt_div)
+            time.sleep(0.5)
     
     def get_offset(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
-            sock.connect((self.HOST, self.PORT))
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except:
+                    pass
             sock.sendall(self.quiery_offset)
             received = b''
             while True:

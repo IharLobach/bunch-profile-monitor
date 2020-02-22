@@ -3,7 +3,7 @@ import json
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
-from bokeh.models import ColumnDataSource, Slider, TextInput, Button
+from bokeh.models import ColumnDataSource, Slider, TextInput, Button, Div, Toggle
 from bokeh.plotting import figure
 from bokeh.events import ButtonClick
 from bokeh.models import DataTable, DateFormatter, TableColumn, Span
@@ -138,6 +138,11 @@ rms_calc_right_span = Span(location=rms_calc_right,
 plot.add_layout(rms_calc_right_span)
 
 # vertical span of the oscilloscope
+
+div = Div(text="Oscilloscope's vertical scale:", width=300)
+
+toggle = Toggle(label="Manual/Auto", button_type="success", width=300, active=True)
+
 conn = ConnectionToScope()
 offset = conn.get_offset()
 volt_div = conn.get_volt_div()
@@ -167,15 +172,15 @@ def update_vertical_span():
 button_increase = Button(
     label="Increase",
     button_type="success",
-    width=300)
+    width=145)
 
 
 def button_increase_callback(event):
-    volt_div = (top_span.location-bottom_span.location)/8
-    if volt_div >= 1.25:
+    volt_div = conn.get_volt_div() #(top_span.location-bottom_span.location)/8
+    if volt_div == 2.5:
         pass
     else:
-        conn.set_volt_div(volt_div*2)
+        conn.set_volt_div(min(volt_div*2,2.5))
         update_vertical_span()
 
 
@@ -185,15 +190,15 @@ button_increase.on_event(ButtonClick, button_increase_callback)
 button_decrease = Button(
     label="Decrease",
     button_type="success",
-    width=300)
+    width=145)
 
 
 def button_decrease_callback(event):
-    volt_div = (top_span.location-bottom_span.location)/8
-    if volt_div <= 0.01:
+    volt_div = conn.get_volt_div()# (top_span.location-bottom_span.location)/8
+    if volt_div == 0.002:
         pass
     else:
-        conn.set_volt_div(volt_div*0.5)
+        conn.set_volt_div(max(volt_div*0.5,0.002))
         update_vertical_span()
 
 
@@ -201,14 +206,15 @@ button_decrease.on_event(ButtonClick, button_decrease_callback)
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
-    if m > -0.020:
+    if (m > -0.020) and (bottom_span.location > -0.040):
         return 0
     elif m < 5.0:
-        return 0
-    elif m < 0.9*bottom_span.location:
-        return 1
-    elif m > 0.9*bottom_span.location*0.5:
-        return -1
+        if m < 0.9*bottom_span.location:
+            return 1
+        elif m > 0.9*bottom_span.location*0.5:
+            return -1
+        else:
+            return 0
 
 
 # end vertical span of the oscilloscope
@@ -239,7 +245,8 @@ for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
-                rms_calc_row, data_table, cutoff_slider,button_increase,button_decrease)
+                rms_calc_row, data_table, cutoff_slider, div, toggle,
+                row(button_decrease, button_increase))
 
 
 curdoc().add_root(row(inputs, plot))
@@ -269,13 +276,12 @@ def try_update_plot():
         reconstructed_line_source.data = dict(x=x, y=y)
         oscilloscope_line_source.data = dict(x=x, y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
-        vs = check_if_need_update_vertical_span(original_signal)
-        if vs == 1:
-            button_increase_callback(1)
-            print("increased")
-        elif vs == -1:
-            button_decrease_callback(1)
-            print("decreased")
+        if toggle.active:
+            vs = check_if_need_update_vertical_span(original_signal)
+            if vs == 1:
+                button_increase_callback(1)
+            elif vs == -1:
+                button_decrease_callback(1)
 
 
 curdoc().add_periodic_callback(try_update_plot, 500)
