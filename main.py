@@ -224,7 +224,7 @@ def check_if_need_update_vertical_span(original_signal):
 cutoff_slider = Slider(
     start=0,
     end=max(bpm.fourier_frequencies),
-    value=max(bpm.fourier_frequencies),
+    value=max(bpm.fourier_frequencies)/2,
     step=.1,
     title="Frequency Cutoff for Transmission Coefficients, GHz")
 
