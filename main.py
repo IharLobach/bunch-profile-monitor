@@ -141,14 +141,19 @@ plot.add_layout(rms_calc_right_span)
 
 div = Div(text="Oscilloscope's vertical scale:", width=300)
 
-toggle = Toggle(label="Manual/Auto", button_type="success", width=300, active=True)
+toggle = Toggle(label="Manual/Auto", button_type="success",
+                width=300, active=get_from_config("vertical_scale_auto"))
 
 conn = ConnectionToScope()
-offset = conn.get_offset()
-volt_div = conn.get_volt_div()
-half_span = volt_div*4
-top = half_span-offset
-bottom = -offset-half_span
+if toggle.active:
+    offset = conn.get_offset()
+    volt_div = conn.get_volt_div()
+    half_span = volt_div*4
+    top = half_span-offset
+    bottom = -offset-half_span
+else:
+    top, bottom = (y0min-yadd, y0max+yadd)
+
 top_span = Span(location=top,
                 dimension='width', line_color='blue',
                 line_dash='dashed', line_width=3)

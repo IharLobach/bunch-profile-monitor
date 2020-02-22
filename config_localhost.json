@@ -8,5 +8,6 @@
     "cleaning_period_min":10,
     "clx_ip":"127.0.0.1",
     "oscilloscope_ip":"131.225.118.120",
-    "oscilloscope_port":1861
+    "oscilloscope_port":1861,
+    "vertical_scale_auto":false
 }
