@@ -3,7 +3,7 @@
     "use_test_data":false,
     "url":"http://lobach-esb-pi3.fnal.gov:8080/bunch-profile-monitor?bokeh-session-id=0",
     "left_rms_calc_limit":52,
-    "right_rms_calc_limit":63,
+    "right_rms_calc_limit":66,
     "logging_length":"1 day",
     "cleaning_period_min":10,
     "clx_ip":"131.225.120.60",
