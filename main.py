@@ -21,7 +21,8 @@ from server_modules.bunch_profile_monitor_data_updater import bpm_data_updater
 from server_modules.initializations_for_gui import \
      init_bpm_signal_transfer_line
 from server_modules.data_logging import save_full_plot_data
-from physics_engine.bunch_length_estimators import calc_fwhm, calc_rms
+from physics_engine.bunch_length_estimators import \
+    calc_fwhm, calc_rms, calc_phase_angle
 from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
@@ -38,6 +39,8 @@ t = bpm_data_updater(bpm, use_test_data,
                      signal_transfer_line, new_data_to_show_queue,
                      new_data_to_save_queue)
 t.start()
+
+t_RF_ns = get_from_config("t_RF_ns")
 
 dlc_thread = data_logger_cleaner(
     logging_length=get_from_config("logging_length"),
@@ -85,10 +88,13 @@ fwhm = calc_fwhm(bpm.reconstructed_signal, bpm.time_arr,
                  rms_left_lim, rms_right_lim)
 rms = calc_rms(bpm.reconstructed_signal, bpm.time_arr,
                rms_left_lim, rms_right_lim)
+phase_angle = calc_phase_angle(bpm.reconstructed_signal, bpm.time_arr,
+                                    t_RF_ns)
 
 table_data = dict(
-        quantities=["FWHM, ns", "RMS, ns"],
-        values=[length_output(fwhm), length_output(rms)],
+        quantities=["FWHM, ns", "RMS, ns", "Phase angle, Deg."],
+        values=[length_output(fwhm), length_output(rms),
+                length_output(phase_angle)],
     )
 table_source = ColumnDataSource(table_data)
 
@@ -97,7 +103,7 @@ columns = [
         TableColumn(field="values", title="Value"),
     ]
 data_table = DataTable(source=table_source, columns=columns,
-                       width=300, height=80)
+                       width=300, height=120)
 
 
 x0 = bpm.time_arr
@@ -231,7 +237,7 @@ cutoff_slider = Slider(
     end=max(bpm.fourier_frequencies),
     value=max(bpm.fourier_frequencies)/2,
     step=.1,
-    title="Frequency Cutoff for Transmission Coefficients, GHz")
+    title="Freq. Cutoff for Transmission Coefficients, GHz")
 
 
 def inputs_callback(attrname, old, new):
@@ -258,6 +264,7 @@ curdoc().add_root(row(inputs, plot))
 curdoc().title = "IOTA Bunch Profile Monitor"
 
 
+
 def try_update_plot():
     if not new_data_to_show_queue.empty():
         new_data = new_data_to_show_queue.get()
@@ -269,12 +276,15 @@ def try_update_plot():
                          rms_left_lim, rms_right_lim)
         rms = calc_rms(reconstructed_signal, bpm.time_arr,
                        rms_left_lim, rms_right_lim)
+        phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
+                                       t_RF_ns)
         table_data = dict(
-            quantities=["FWHM, ns", "RMS, ns"],
-            values=[length_output(fwhm), length_output(rms)])
+            quantities=["FWHM, ns", "RMS, ns", "Phase angle, deg."],
+            values=[length_output(fwhm), length_output(rms),
+                    length_output(phase_angle)])
         table_source.data = table_data
         data_logging.add_record((fwhm, rms, rms_left_lim, rms_right_lim,
-                                 cutoff_slider.value))
+                                 cutoff_slider.value, phase_angle))
         acnet_logger.send_to_ACNET(fwhm, rms)
         x = reconstructed_line_source.data["x"]
         y = reconstructed_signal

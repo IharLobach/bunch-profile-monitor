@@ -9,5 +9,6 @@
     "clx_ip":"127.0.0.1",
     "oscilloscope_ip":"131.225.118.120",
     "oscilloscope_port":1861,
-    "vertical_scale_auto":false
+    "vertical_scale_auto":false,
+    "t_RF_ns":20.0
 }

@@ -71,3 +71,9 @@ def calc_rms(reconstructed_signal, time_arr, left_lim, right_lim):
                           weights=-y_within_lims)
     rms = np.sqrt(variance)
     return rms
+
+@nan_support
+def calc_phase_angle(reconstructed_signal, time_arr, t_RF):
+    i_min = np.argmin(reconstructed_signal)
+    delta_t = time_arr[i_min]-t_RF
+    return delta_t/(133.0/4.0)/np.pi*180.0
