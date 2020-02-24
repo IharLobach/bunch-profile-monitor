@@ -12,5 +12,5 @@
     "vertical_scale_auto":false,
     "t_RF_ns":20.0,
     "y_range":[-0.875,0.125],
-    "low_signal_lim_V":0.001
+    "low_signal_lim_V":0.0004
 }
