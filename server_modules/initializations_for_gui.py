@@ -13,7 +13,7 @@ def init_signal_transfer_line(freqs):
     p0, p1, p2, p3, p4, p5 = [os.path.join(cwd, "bunch-profile-monitor",
                               "signal_transfer_line_data", fn) for fn in
                               file_names]
-    amplifier = Amplifier(p0, p1, 2.7, True, True, True)
+    amplifier = Amplifier(p0, p1, 0.062, True, True, True)
     cable = Cable(p2, p3, p4, p5, 2*0.229952e3, 0.26, True, True, True)
     return SignalTransferLine([cable, amplifier], freqs)
 
