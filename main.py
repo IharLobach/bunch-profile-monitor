@@ -67,36 +67,15 @@ def button_save_full_plot_data_callback(event):
 button_save_full_plot_data.on_event(ButtonClick,
                                     button_save_full_plot_data_callback)
 
+div_rms = Div(text="RMS calculation limits:", width=300)
 
-x0 = bpm.time_arr
-x0max = max(x0)
-x0min = min(x0)
-minVal = length_output(get_from_config("left_rms_calc_limit"))
-maxVal = length_output(get_from_config("right_rms_calc_limit"))
-rms_calculation_min_text = TextInput(
-    title="RMS calc. left limit",
-    value=minVal,
-    width=145)
-rms_calculation_max_text = TextInput(
-    title="RMS calc. right limit",
-    value=maxVal,
-    width=145)
+toggle_rms = Toggle(label="Manual/Auto", button_type="success",
+                    width=300, active=get_from_config("rms_lims_auto"))
 
-rms_left_lim = float(rms_calculation_min_text.value)
-rms_right_lim = float(rms_calculation_max_text.value)
-fwhm = calc_fwhm(bpm.reconstructed_signal, bpm.time_arr,
-                 rms_left_lim, rms_right_lim)
-rms = calc_rms(bpm.reconstructed_signal, bpm.time_arr,
-               rms_left_lim, rms_right_lim)
-phase_angle = calc_phase_angle(bpm.reconstructed_signal, bpm.time_arr,
-                               t_RF_ns)
+rms_calculation_min_text = TextInput(width=145)
+rms_calculation_max_text = TextInput(width=145)
 
-table_data = dict(
-        quantities=["FWHM, ns", "RMS, ns", "Phase angle, Deg."],
-        values=[length_output(fwhm), length_output(rms),
-                length_output(phase_angle)],
-    )
-table_source = ColumnDataSource(table_data)
+table_source = ColumnDataSource()
 
 columns = [
         TableColumn(field="quantities", title="Quantity"),
@@ -105,22 +84,13 @@ columns = [
 data_table = DataTable(source=table_source, columns=columns,
                        width=300, height=120)
 
-
-x0 = bpm.time_arr
-y0 = bpm.reconstructed_signal
-y0min = min(y0)
-y0max = max(y0)
-y0span = y0max - y0min
-yadd = 0.1 * y0span
-reconstructed_line_source = ColumnDataSource(data=dict(x=x0, y=y0))
-y_original = bpm.v_arr
-oscilloscope_line_source = ColumnDataSource(data=dict(x=x0, y=y_original))
+reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
+oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
 # Set up plot
 plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
               tools="crosshair,pan,reset,save,wheel_zoom,box_zoom",
-              x_range=[get_from_config("left_rms_calc_limit")-1,
-                       get_from_config("right_rms_calc_limit")+1],
+              x_range=get_from_config("x_range"),
               y_range=get_from_config("y_range"),# [y0min-yadd, y0max+yadd],
               sizing_mode="scale_both")
 
@@ -133,15 +103,12 @@ plot.title.text = "Last updated: {}".format(datetime.datetime.now())
 plot.xaxis.axis_label = "Time, ns"
 plot.yaxis.axis_label = "Signal from wall-current monitor, V"
 
-rms_calc_left = float(rms_calculation_min_text.value)
-rms_calc_left_span = Span(location=rms_calc_left,
-                          dimension='height', line_color='green',
+
+rms_calc_left_span = Span(dimension='height', line_color='green',
                           line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_left_span)
 
-rms_calc_right = float(rms_calculation_max_text.value)
-rms_calc_right_span = Span(location=rms_calc_right,
-                           dimension='height', line_color='red',
+rms_calc_right_span = Span(dimension='height', line_color='red',
                            line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_right_span)
 
@@ -160,7 +127,7 @@ if toggle.active:
     top = half_span-offset
     bottom = -offset-half_span
 else:
-    top, bottom = (y0min-yadd, y0max+yadd)
+    top, bottom = get_from_config("y_range")
 
 top_span = Span(location=top,
                 dimension='width', line_color='blue',
@@ -242,10 +209,11 @@ cutoff_slider = Slider(
 
 
 def inputs_callback(attrname, old, new):
-    rms_calc_left = float(rms_calculation_min_text.value)
-    rms_calc_right = float(rms_calculation_max_text.value)
-    rms_calc_left_span.location = rms_calc_left
-    rms_calc_right_span.location = rms_calc_right
+    if not toggle_rms.active:
+        rms_calc_left = float(rms_calculation_min_text.value)
+        rms_calc_right = float(rms_calculation_max_text.value)
+        rms_calc_left_span.location = rms_calc_left
+        rms_calc_right_span.location = rms_calc_right
     bpm.transmission_coefs = \
         np.where(bpm.fourier_frequencies < cutoff_slider.value,
                  signal_transfer_line.transmission_coefs, 1)
@@ -257,6 +225,7 @@ for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
+                div_rms, toggle_rms,
                 rms_calc_row, data_table, cutoff_slider, div, toggle,
                 row(button_decrease, button_increase))
 
@@ -265,6 +234,9 @@ curdoc().add_root(row(inputs, plot))
 curdoc().title = "IOTA Bunch Profile Monitor"
 
 low_signal_limit = get_from_config("low_signal_lim_V")
+mbl = get_from_config("max_bunch_length_ns")
+
+rms_window = get_from_config("rms_window_size")
 
 
 def try_update_plot():
@@ -272,13 +244,23 @@ def try_update_plot():
         new_data = new_data_to_show_queue.get()
         reconstructed_signal = new_data["reconstructed_signal"] 
         original_signal = new_data["oscilloscope_signal"]
-        rms_left_lim = float(rms_calculation_min_text.value)
-        rms_right_lim = float(rms_calculation_max_text.value)
+        i_min = np.argmin(reconstructed_signal)
+        t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
             fwhm, rms, phase_angle = ("nan", "nan", "nan")
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
-                             rms_left_lim, rms_right_lim)
+                             t_min-mbl, t_min+mbl)
+            if toggle_rms.active and (fwhm != 'nan'):
+                rms_left_lim = t_min-rms_window*fwhm
+                rms_right_lim = t_min+rms_window*fwhm
+                rms_calc_left_span.location = rms_left_lim
+                rms_calc_right_span.location = rms_right_lim
+                rms_calculation_min_text.value = length_output(rms_left_lim)
+                rms_calculation_max_text.value = length_output(rms_right_lim)
+            else:
+                rms_left_lim = rms_calc_left_span.location
+                rms_right_lim = rms_calc_right_span.location
             rms = calc_rms(reconstructed_signal, bpm.time_arr,
                            rms_left_lim, rms_right_lim)
             phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
@@ -291,7 +273,7 @@ def try_update_plot():
         data_logging.add_record((fwhm, rms, rms_left_lim, rms_right_lim,
                                  cutoff_slider.value, phase_angle))
         acnet_logger.send_to_ACNET(fwhm, rms)
-        x = reconstructed_line_source.data["x"]
+        x = bpm.time_arr
         y = reconstructed_signal
         reconstructed_line_source.data = dict(x=x, y=y)
         oscilloscope_line_source.data = dict(x=x, y=original_signal)

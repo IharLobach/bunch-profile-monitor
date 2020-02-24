@@ -2,8 +2,6 @@
     "dt_ns":0.1,
     "use_test_data":false,
     "url":"http://lobach-esb-pi3.fnal.gov:8080/bunch-profile-monitor?bokeh-session-id=0",
-    "left_rms_calc_limit":52,
-    "right_rms_calc_limit":66,
     "logging_length":"1 day",
     "cleaning_period_min":10,
     "clx_ip":"131.225.120.60",
@@ -12,5 +10,9 @@
     "vertical_scale_auto":true,
     "t_RF_ns":50.0,
     "y_range":[-0.875,0.125],
-    "low_signal_lim_V":0.0004
+    "x_range":[50,68],
+    "low_signal_lim_V":0.0004,
+    "rms_lims_auto":true,
+    "max_bunch_length_ns":10.0,
+    "rms_window_size":2.0
 }

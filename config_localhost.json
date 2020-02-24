@@ -2,8 +2,6 @@
     "dt_ns":0.1,
     "use_test_data":true,
     "url":"http://localhost:5006/bunch-profile-monitor?bokeh-session-id=0",
-    "left_rms_calc_limit":22,
-    "right_rms_calc_limit":26,
     "logging_length":"1 day",
     "cleaning_period_min":10,
     "clx_ip":"127.0.0.1",
@@ -11,6 +9,10 @@
     "oscilloscope_port":1861,
     "vertical_scale_auto":false,
     "t_RF_ns":20.0,
+    "x_range":[21.0,26.0],
     "y_range":[-0.875,0.125],
-    "low_signal_lim_V":0.0004
+    "low_signal_lim_V":0.001,
+    "rms_lims_auto":true,
+    "max_bunch_length_ns":10.0,
+    "rms_window_size":2.0
 }
