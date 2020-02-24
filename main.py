@@ -89,7 +89,7 @@ fwhm = calc_fwhm(bpm.reconstructed_signal, bpm.time_arr,
 rms = calc_rms(bpm.reconstructed_signal, bpm.time_arr,
                rms_left_lim, rms_right_lim)
 phase_angle = calc_phase_angle(bpm.reconstructed_signal, bpm.time_arr,
-                                    t_RF_ns)
+                               t_RF_ns)
 
 table_data = dict(
         quantities=["FWHM, ns", "RMS, ns", "Phase angle, Deg."],
@@ -119,7 +119,9 @@ oscilloscope_line_source = ColumnDataSource(data=dict(x=x0, y=y_original))
 plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
               tools="crosshair,pan,reset,save,wheel_zoom,box_zoom",
-              x_range=[min(x0), max(x0)], y_range=[y0min-yadd, y0max+yadd],
+              x_range=[get_from_config("left_rms_calc_limit")-1,
+                       get_from_config("right_rms_calc_limit")+1],
+              y_range=get_from_config("y_range"),# [y0min-yadd, y0max+yadd],
               sizing_mode="scale_both")
 
 plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
@@ -187,11 +189,11 @@ button_increase = Button(
 
 
 def button_increase_callback(event):
-    volt_div = conn.get_volt_div() #(top_span.location-bottom_span.location)/8
+    volt_div = conn.get_volt_div()
     if volt_div == 2.5:
         pass
     else:
-        conn.set_volt_div(min(volt_div*2,2.5))
+        conn.set_volt_div(min(volt_div*2, 2.5))
         update_vertical_span()
 
 
@@ -205,15 +207,16 @@ button_decrease = Button(
 
 
 def button_decrease_callback(event):
-    volt_div = conn.get_volt_div()# (top_span.location-bottom_span.location)/8
+    volt_div = conn.get_volt_div()
     if volt_div == 0.002:
         pass
     else:
-        conn.set_volt_div(max(volt_div*0.5,0.002))
+        conn.set_volt_div(max(volt_div*0.5, 0.002))
         update_vertical_span()
 
 
 button_decrease.on_event(ButtonClick, button_decrease_callback)
+
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
@@ -229,8 +232,6 @@ def check_if_need_update_vertical_span(original_signal):
 
 
 # end vertical span of the oscilloscope
-
-
 
 cutoff_slider = Slider(
     start=0,
@@ -263,8 +264,7 @@ inputs = column(saved_files_folder_text, button_save_full_plot_data,
 curdoc().add_root(row(inputs, plot))
 curdoc().title = "IOTA Bunch Profile Monitor"
 
-
-
+low_signal_limit = get_from_config("low_signal_lim_V")
 def try_update_plot():
     if not new_data_to_show_queue.empty():
         new_data = new_data_to_show_queue.get()
@@ -272,12 +272,15 @@ def try_update_plot():
         original_signal = new_data["oscilloscope_signal"]
         rms_left_lim = float(rms_calculation_min_text.value)
         rms_right_lim = float(rms_calculation_max_text.value)
-        fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
-                         rms_left_lim, rms_right_lim)
-        rms = calc_rms(reconstructed_signal, bpm.time_arr,
-                       rms_left_lim, rms_right_lim)
-        phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
-                                       t_RF_ns)
+        if min(original_signal) > -low_signal_limit:
+            fwhm, rms, phase_angle = ("nan", "nan", "nan")
+        else:
+            fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
+                             rms_left_lim, rms_right_lim)
+            rms = calc_rms(reconstructed_signal, bpm.time_arr,
+                           rms_left_lim, rms_right_lim)
+            phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
+                                           t_RF_ns)
         table_data = dict(
             quantities=["FWHM, ns", "RMS, ns", "Phase angle, deg."],
             values=[length_output(fwhm), length_output(rms),

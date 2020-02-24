@@ -10,5 +10,7 @@
     "oscilloscope_ip":"131.225.118.120",
     "oscilloscope_port":1861,
     "vertical_scale_auto":false,
-    "t_RF_ns":20.0
+    "t_RF_ns":20.0,
+    "y_range":[-0.775,0.125],
+    "low_signal_lim_V":0.020
 }
