@@ -265,6 +265,8 @@ curdoc().add_root(row(inputs, plot))
 curdoc().title = "IOTA Bunch Profile Monitor"
 
 low_signal_limit = get_from_config("low_signal_lim_V")
+
+
 def try_update_plot():
     if not new_data_to_show_queue.empty():
         new_data = new_data_to_show_queue.get()

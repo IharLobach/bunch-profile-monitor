@@ -11,6 +11,6 @@
     "oscilloscope_port":1861,
     "vertical_scale_auto":true,
     "t_RF_ns":50.0,
-    "y_range":[-0.775,0.125],
-    "low_signal_lim_V":0.020
+    "y_range":[-0.875,0.125],
+    "low_signal_lim_V":0.001
 }
