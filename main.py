@@ -91,7 +91,7 @@ plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
               tools="crosshair,pan,reset,save,wheel_zoom,box_zoom",
               x_range=get_from_config("x_range"),
-              y_range=get_from_config("y_range"),# [y0min-yadd, y0max+yadd],
+              y_range=get_from_config("y_range"),
               sizing_mode="scale_both")
 
 plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
@@ -107,6 +107,8 @@ plot.yaxis.axis_label = "Signal from wall-current monitor, V"
 rms_calc_left_span = Span(dimension='height', line_color='green',
                           line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_left_span)
+
+print("location =", rms_calc_left_span.location)
 
 rms_calc_right_span = Span(dimension='height', line_color='red',
                            line_dash='dashed', line_width=3)
@@ -258,11 +260,9 @@ def try_update_plot():
                 rms_calc_right_span.location = rms_right_lim
                 rms_calculation_min_text.value = length_output(rms_left_lim)
                 rms_calculation_max_text.value = length_output(rms_right_lim)
-            else:
-                rms_left_lim = rms_calc_left_span.location
-                rms_right_lim = rms_calc_right_span.location
             rms = calc_rms(reconstructed_signal, bpm.time_arr,
-                           rms_left_lim, rms_right_lim)
+                           rms_calc_left_span.location,
+                           rms_calc_right_span.location)
             phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
                                            t_RF_ns)
         table_data = dict(
@@ -270,7 +270,8 @@ def try_update_plot():
             values=[length_output(fwhm), length_output(rms),
                     length_output(phase_angle)])
         table_source.data = table_data
-        data_logging.add_record((fwhm, rms, rms_left_lim, rms_right_lim,
+        data_logging.add_record((fwhm, rms, rms_calc_left_span.location,
+                                 rms_calc_right_span.location,
                                  cutoff_slider.value, phase_angle))
         acnet_logger.send_to_ACNET(fwhm, rms)
         x = bpm.time_arr
