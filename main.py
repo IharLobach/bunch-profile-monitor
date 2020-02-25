@@ -254,7 +254,7 @@ def try_update_plot():
         i_min = np.argmin(reconstructed_signal)
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
-            fwhm, rms, phase_angle, current = "nan"
+            fwhm = rms = phase_angle = current = "nan"
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
