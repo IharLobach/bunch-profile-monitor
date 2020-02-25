@@ -56,7 +56,7 @@ def calc_fwhm(reconstructed_signal, time_arr, left_lim, right_lim):
     right_t = calc_intersection_time(t[right_idx], y[right_idx],
                                      t[right_idx+1], y[right_idx+1], 0)
     fwhm = right_t-left_t
-    return fwhm
+    return 30*fwhm
 
 
 @nan_support
@@ -70,7 +70,7 @@ def calc_rms(reconstructed_signal, time_arr, left_lim, right_lim):
     variance = np.average((time_arr_within_lims-time_center)**2,
                           weights=-y_within_lims)
     rms = np.sqrt(variance)
-    return rms
+    return 30*rms
 
 
 @nan_support
@@ -87,4 +87,4 @@ def calc_current(reconstructed_signal, time_arr, left_lim, right_lim):
     y = reconstructed_signal-average_level
     time_arr_within_lims, y_within_lims = \
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
-    return np.abs(sum(y_within_lims))
+    return -sum(y_within_lims)

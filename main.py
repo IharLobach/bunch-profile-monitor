@@ -259,8 +259,8 @@ def try_update_plot():
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
             if toggle_rms.active and (fwhm != 'nan'):
-                rms_left_lim = t_min-rms_window*fwhm
-                rms_right_lim = t_min+rms_window*fwhm
+                rms_left_lim = t_min-rms_window*fwhm/30
+                rms_right_lim = t_min+rms_window*fwhm/30
                 rms_calc_left_span.location = rms_left_lim
                 rms_calc_right_span.location = rms_right_lim
                 rms_calculation_min_text.value = length_output(rms_left_lim)
@@ -273,7 +273,7 @@ def try_update_plot():
             current = calc_current(reconstructed_signal, bpm.time_arr,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
-        vals = [30*fwhm, 30*rms, phase_angle, current]
+        vals = [fwhm, rms, phase_angle, current]
         vals_formatted = [length_output(v) for v in vals]
         table_data = dict(
             quantities=["FWHM length, cm", "RMS length, cm",
