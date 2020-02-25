@@ -3,7 +3,8 @@ import json
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
-from bokeh.models import ColumnDataSource, Slider, TextInput, Button, Div, Toggle
+from bokeh.models import \
+     ColumnDataSource, Slider, TextInput, Button, Div, Toggle
 from bokeh.plotting import figure
 from bokeh.events import ButtonClick
 from bokeh.models import DataTable, DateFormatter, TableColumn, Span
@@ -22,7 +23,7 @@ from server_modules.initializations_for_gui import \
      init_bpm_signal_transfer_line
 from server_modules.data_logging import save_full_plot_data
 from physics_engine.bunch_length_estimators import \
-    calc_fwhm, calc_rms, calc_phase_angle
+    calc_fwhm, calc_rms, calc_phase_angle, calc_current
 from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
@@ -67,7 +68,8 @@ def button_save_full_plot_data_callback(event):
 button_save_full_plot_data.on_event(ButtonClick,
                                     button_save_full_plot_data_callback)
 
-div_rms = Div(text="RMS calculation limits:", width=300)
+div_rms = Div(text="Calculation limits (ns) for RMS length and Current:",
+              width=300)
 
 toggle_rms = Toggle(label="Manual/Auto", button_type="success",
                     width=300, active=get_from_config("rms_lims_auto"))
@@ -84,7 +86,7 @@ columns = [
         TableColumn(field="values", title="Value"),
     ]
 data_table = DataTable(source=table_source, columns=columns,
-                       width=300, height=120)
+                       width=300, height=160)
 
 reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
 oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
@@ -144,6 +146,7 @@ plot.add_layout(bottom_span)
 
 
 def update_vertical_span():
+    time.sleep(0.5)
     offset = conn.get_offset()
     volt_div = conn.get_volt_div()
     half_span = volt_div*4
@@ -191,15 +194,15 @@ button_decrease.on_event(ButtonClick, button_decrease_callback)
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
-    if (m > -0.020) and (bottom_span.location > -0.040):
+    if (m > -0.010) and (bottom_span.location > -0.020):
         return 0
-    elif m < 5.0:
+    elif m > -5.0:
         if m < 0.9*bottom_span.location:
             return 1
         elif m > 0.9*bottom_span.location*0.5:
             return -1
-        else:
-            return 0
+    else:
+        return 0
 
 
 # end vertical span of the oscilloscope
@@ -251,7 +254,7 @@ def try_update_plot():
         i_min = np.argmin(reconstructed_signal)
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
-            fwhm, rms, phase_angle = ("nan", "nan", "nan")
+            fwhm, rms, phase_angle, current = "nan"
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
@@ -267,19 +270,24 @@ def try_update_plot():
                            rms_calc_right_span.location)
             phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
                                            t_RF_ns)
+            current = calc_current(reconstructed_signal, bpm.time_arr,
+                                   rms_calc_left_span.location,
+                                   rms_calc_right_span.location)
+        vals = [30*fwhm, 30*rms, phase_angle, current]
+        vals_formatted = [length_output(v) for v in vals]
         table_data = dict(
-            quantities=["FWHM, ns", "RMS, ns", "Phase angle, deg."],
-            values=[length_output(fwhm), length_output(rms),
-                    length_output(phase_angle)])
+            quantities=["FWHM length, cm", "RMS length, cm",
+                        "Phase angle, deg.", "Current, mA"],
+            values=vals_formatted)
         table_source.data = table_data
         data_logging.add_record((fwhm, rms, rms_calc_left_span.location,
                                  rms_calc_right_span.location,
                                  cutoff_slider.value, phase_angle))
         acnet_logger.send_to_ACNET(fwhm, rms)
-        x = bpm.time_arr
-        y = reconstructed_signal
-        reconstructed_line_source.data = dict(x=x, y=y)
-        oscilloscope_line_source.data = dict(x=x, y=original_signal)
+        reconstructed_line_source.data = dict(x=bpm.time_arr,
+                                              y=reconstructed_signal)
+        oscilloscope_line_source.data = dict(x=bpm.time_arr,
+                                             y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if toggle.active:
             vs = check_if_need_update_vertical_span(original_signal)

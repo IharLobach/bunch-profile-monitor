@@ -14,5 +14,5 @@
     "low_signal_lim_V":0.001,
     "rms_lims_auto":true,
     "max_bunch_length_ns":10.0,
-    "rms_window_size":2.0
+    "rms_window_size":2.5
 }
