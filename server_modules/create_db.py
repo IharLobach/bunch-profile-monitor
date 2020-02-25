@@ -11,6 +11,6 @@ def create_db():
     c.execute('''CREATE TABLE log
                 (date text, FWHM real, RMS real,
                 LeftLim real, RightLim real, CutOff real,
-                PhaseAngle real)''')
+                PhaseAngle real, Current real)''')
     conn.commit()
     conn.close()

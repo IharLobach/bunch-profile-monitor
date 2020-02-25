@@ -282,7 +282,8 @@ def try_update_plot():
         table_source.data = table_data
         data_logging.add_record((fwhm, rms, rms_calc_left_span.location,
                                  rms_calc_right_span.location,
-                                 cutoff_slider.value, phase_angle))
+                                 cutoff_slider.value, phase_angle,
+                                 current))
         acnet_logger.send_to_ACNET(fwhm, rms)
         reconstructed_line_source.data = dict(x=bpm.time_arr,
                                               y=reconstructed_signal)
