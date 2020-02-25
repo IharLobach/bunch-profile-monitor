@@ -1,4 +1,6 @@
 import numpy as np
+from server_modules.config_requests import get_from_config
+current_calibration_coef = get_from_config("current_calibration_coef")
 
 
 class ErrorFWHMTooManyIntersections(Exception):
@@ -87,4 +89,4 @@ def calc_current(reconstructed_signal, time_arr, left_lim, right_lim):
     y = reconstructed_signal-average_level
     time_arr_within_lims, y_within_lims = \
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
-    return -sum(y_within_lims)
+    return current_calibration_coef*(-sum(y_within_lims))

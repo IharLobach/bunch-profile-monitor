@@ -15,5 +15,5 @@
     "rms_lims_auto":true,
     "max_bunch_length_ns":10.0,
     "rms_window_size":2.5,
-    "current_calibration_coef":0.5
+    "current_calibration_coef":0.45
 }
