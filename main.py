@@ -72,8 +72,10 @@ div_rms = Div(text="RMS calculation limits:", width=300)
 toggle_rms = Toggle(label="Manual/Auto", button_type="success",
                     width=300, active=get_from_config("rms_lims_auto"))
 
-rms_calculation_min_text = TextInput(width=145)
-rms_calculation_max_text = TextInput(width=145)
+rms_calculation_min_text = TextInput(
+    value=length_output(get_from_config("x_range")[0]), width=145)
+rms_calculation_max_text = TextInput(
+    value=length_output(get_from_config("x_range")[1]), width=145)
 
 table_source = ColumnDataSource()
 
@@ -104,13 +106,13 @@ plot.xaxis.axis_label = "Time, ns"
 plot.yaxis.axis_label = "Signal from wall-current monitor, V"
 
 
-rms_calc_left_span = Span(dimension='height', line_color='green',
+rms_calc_left_span = Span(location=get_from_config("x_range")[0],
+                          dimension='height', line_color='green',
                           line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_left_span)
 
-print("location =", rms_calc_left_span.location)
-
-rms_calc_right_span = Span(dimension='height', line_color='red',
+rms_calc_right_span = Span(location=get_from_config("x_range")[1],
+                           dimension='height', line_color='red',
                            line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_right_span)
 
