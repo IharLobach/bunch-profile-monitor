@@ -30,16 +30,20 @@ import server_modules.data_logging as data_logging
 from server_modules.data_logging import data_logger_cleaner
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 
-new_data_to_show_queue = queue.LifoQueue(1)
-new_data_to_save_queue = queue.LifoQueue(1)
+# new_data_to_show_queue = queue.LifoQueue(1)
+# new_data_to_save_queue = queue.LifoQueue(1)
 
 
 use_test_data = get_from_config("use_test_data")
-bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data)
-t = bpm_data_updater(bpm, use_test_data,
-                     signal_transfer_line, new_data_to_show_queue,
-                     new_data_to_save_queue)
-t.start()
+if not use_test_data:
+    conn = ConnectionToScope()
+else:
+    conn = None
+bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
+# t = bpm_data_updater(bpm, use_test_data,
+#                      signal_transfer_line, new_data_to_show_queue,
+#                      new_data_to_save_queue)
+# t.start()
 
 t_RF_ns = get_from_config("t_RF_ns")
 
@@ -59,14 +63,6 @@ button_save_full_plot_data = Button(
     label="Save full plot data",
     button_type="success",
     width=300)
-
-
-def button_save_full_plot_data_callback(event):
-    save_full_plot_data(new_data_to_save_queue, saved_files_folder_text.value)
-
-
-button_save_full_plot_data.on_event(ButtonClick,
-                                    button_save_full_plot_data_callback)
 
 div_rms = Div(text="Calculation limits (ns) for RMS length and Current:",
               width=300)
@@ -90,6 +86,18 @@ data_table = DataTable(source=table_source, columns=columns,
 
 reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
 oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
+
+
+def button_save_full_plot_data_callback(event):
+    save_full_plot_data(
+        {
+            "oscilloscope_signal": oscilloscope_line_source.data['y'],
+            "reconstructed_signal": reconstructed_line_source.data['y']
+        }, saved_files_folder_text.value)
+
+
+button_save_full_plot_data.on_event(ButtonClick,
+                                    button_save_full_plot_data_callback)
 # Set up plot
 plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
@@ -125,7 +133,7 @@ div = Div(text="Oscilloscope's vertical scale:", width=300)
 toggle = Toggle(label="Manual/Auto", button_type="success",
                 width=300, active=get_from_config("vertical_scale_auto"))
 
-conn = ConnectionToScope()
+
 if toggle.active:
     offset = conn.get_offset()
     volt_div = conn.get_volt_div()
@@ -167,7 +175,9 @@ def button_increase_callback(event):
     if volt_div == 2.5:
         pass
     else:
-        conn.set_volt_div(min(volt_div*2, 2.5))
+        target = min(volt_div*2, 2.5)
+        while conn.get_volt_div() != target:
+            conn.set_volt_div(target)
         update_vertical_span()
 
 
@@ -185,7 +195,9 @@ def button_decrease_callback(event):
     if volt_div == 0.002:
         pass
     else:
-        conn.set_volt_div(max(volt_div*0.5, 0.002))
+        target = max(volt_div*0.5, 0.002)
+        while conn.get_volt_div() != target:
+            conn.set_volt_div(target)
         update_vertical_span()
 
 
@@ -247,10 +259,13 @@ rms_window = get_from_config("rms_window_size")
 
 
 def try_update_plot():
-    if not new_data_to_show_queue.empty():
-        new_data = new_data_to_show_queue.get()
-        reconstructed_signal = new_data["reconstructed_signal"] 
-        original_signal = new_data["oscilloscope_signal"]
+    try:
+        time.sleep(0.5)
+        update_successful = bpm.update_data(testing=use_test_data)
+        bpm.perform_fft()
+        bpm.perform_signal_reconstruction()
+        reconstructed_signal = bpm.reconstructed_signal
+        original_signal = bpm.v_arr
         i_min = np.argmin(reconstructed_signal)
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
@@ -296,6 +311,8 @@ def try_update_plot():
                 button_increase_callback(1)
             elif vs == -1:
                 button_decrease_callback(1)
+    except Exception as e:
+        print(e)
 
 
 curdoc().add_periodic_callback(try_update_plot, 500)

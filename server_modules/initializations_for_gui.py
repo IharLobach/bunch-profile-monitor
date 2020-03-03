@@ -18,8 +18,7 @@ def init_signal_transfer_line(freqs):
     return SignalTransferLine([cable, amplifier], freqs)
 
 
-def init_bpm_signal_transfer_line(useTestData):
-    conn = ConnectionToScope()
+def init_bpm_signal_transfer_line(useTestData, conn):
     dt_ns = get_from_config("dt_ns")
     bpm = BunchProfileMonitor(connection_to_scope=conn, dt=dt_ns)
     attempt = 0
