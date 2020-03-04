@@ -44,12 +44,20 @@ class ConnectionToScope():
         return v_arr
 
     def get_volt_div(self):
-        self.sock.sendall(self.quiery_volt_div)
+        print("sending in get volt div")
         received = b''
         while True:
-            received += self.sock.recv(4096)
-            if received[-2:] == b'V\n':
+            self.sock.sendall(self.quiery_volt_div)
+            #self.sock.sendall(self.quiery_volt_div)
+            for i in range(5):
+                received += self.sock.recv(4096)
+                print("received in get volt div =", received)
+                time.sleep(1)
+                if received[-2:] == b'V\n':
+                    break
+            if received != b'':
                 break
+        
         res = float(re.split(b' ', received)[1])
         return res
 
@@ -60,13 +68,23 @@ class ConnectionToScope():
             '{}'.format(volt_div).encode()+b' V\n'
         # print(command_volt_div)
         self.sock.sendall(command_volt_div)
-        time.sleep(0.5)
+        received = b''
+        # while True:
+        #     received += self.sock.recv(4096)
+        #     print("received in set volt div =", received)
+        #     time.sleep(1)
+        #     if received[-2:] == b'V\n':
+        #         break
+        time.sleep(2)
+        print("after time sleep in set_volt_div")
 
     def get_offset(self):
         self.sock.sendall(self.quiery_offset)
         received = b''
         while True:
             received += self.sock.recv(4096)
+            print("received in get offset =", received)
+            time.sleep(1)
             if received[-2:] == b'V\n':
                 break
         res = float(re.split(b' ', received)[1])

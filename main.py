@@ -146,7 +146,7 @@ if toggle.active:
     top = half_span-offset
     bottom = -offset-half_span
 else:
-    top, bottom = get_from_config("y_range")
+    bottom, top = get_from_config("y_range")
 
 top_span = Span(location=top,
                 dimension='width', line_color='blue',
@@ -159,8 +159,8 @@ plot.add_layout(bottom_span)
 
 
 def update_vertical_span():
-    time.sleep(0.5)
     offset = conn.get_offset()
+    print("offset = ", offset)
     volt_div = conn.get_volt_div()
     half_span = volt_div*4
     top = half_span-offset
@@ -174,6 +174,10 @@ button_increase = Button(
     button_type="success",
     width=145)
 
+toggle_increase = Toggle(label="Increase", button_type="success",
+                         width=145,
+                         active=False)
+
 
 def button_increase_callback(event):
     volt_div = conn.get_volt_div()
@@ -181,37 +185,43 @@ def button_increase_callback(event):
         pass
     else:
         target = min(volt_div*2, 2.5)
-        while conn.get_volt_div() != target:
+        print("target = ", target)
+        while True:
             conn.set_volt_div(target)
-        update_vertical_span()
+            print("set")
+            vd = conn.get_volt_div()
+            print("vd = ", vd)
+            if vd == target:
+                break
+    update_vertical_span()
 
 
-button_increase.on_event(ButtonClick, button_increase_callback)
-
-
-button_decrease = Button(
-    label="Decrease",
-    button_type="success",
-    width=145)
+toggle_decrease = Toggle(label="Decrease", button_type="success",
+                         width=145,
+                         active=False)
 
 
 def button_decrease_callback(event):
     volt_div = conn.get_volt_div()
+    print("volt_div = ", volt_div)
     if volt_div == 0.002:
         pass
     else:
         target = max(volt_div*0.5, 0.002)
-        while conn.get_volt_div() != target:
+        print("target = ", target)
+        while True:
             conn.set_volt_div(target)
-        update_vertical_span()
-
-
-button_decrease.on_event(ButtonClick, button_decrease_callback)
+            print("set")
+            vd = conn.get_volt_div()
+            print(vd)
+            if vd == target:
+                break
+    update_vertical_span()
 
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
-    if (m > -0.010) and (bottom_span.location > -0.020):
+    if (m > -0.010) and (bottom_span.location > -0.040):
         return 0
     elif m > -5.0:
         if m < 0.9*bottom_span.location:
@@ -251,7 +261,7 @@ rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
                 div_rms, toggle_rms,
                 rms_calc_row, data_table, cutoff_slider, div, toggle,
-                row(button_decrease, button_increase))
+                row(toggle_decrease, toggle_increase))
 
 
 curdoc().add_root(row(inputs, plot))
@@ -265,7 +275,6 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
-        time.sleep(0.5)
         update_successful = bpm.update_data(testing=use_test_data)
         bpm.perform_fft()
         bpm.perform_signal_reconstruction()
@@ -312,12 +321,21 @@ def try_update_plot():
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if toggle.active:
             vs = check_if_need_update_vertical_span(original_signal)
+            print("vs = ", vs)
             if vs == 1:
                 button_increase_callback(1)
             elif vs == -1:
                 button_decrease_callback(1)
+        else:
+            if toggle_increase.active:
+                print("Increase active")
+                button_increase_callback(1)
+                toggle_increase.active = False
+            if toggle_decrease.active:
+                button_decrease_callback(1)
+                toggle_decrease.active = False
     except Exception as e:
-        print(e)
+        print("Exception happened in try_update_plot:", e)
 
 
 curdoc().add_periodic_callback(try_update_plot, 500)

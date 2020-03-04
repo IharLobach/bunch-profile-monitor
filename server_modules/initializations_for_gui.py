@@ -27,8 +27,6 @@ def init_bpm_signal_transfer_line(useTestData, conn):
             raise Exception('''Attempted to connect to the scope 5 times.
          No luck.''')
         if bpm.update_data(testing=useTestData):
-            print("data updated")
-            print(bpm.v_arr)
             break
         attempt += 1
     bpm.perform_fft()
