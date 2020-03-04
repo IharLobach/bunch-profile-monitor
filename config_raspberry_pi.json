@@ -8,13 +8,14 @@
     "oscilloscope_ip":"131.225.118.120",
     "oscilloscope_port":1861,
     "vertical_scale_auto":true,
-    "t_RF_ns":50.0,
+    "t_RF_ns":20.0,
+    "x_range":[45,65],
     "y_range":[-0.875,0.125],
-    "x_range":[50,68],
-    "low_signal_lim_V":0.0004,
+    "low_signal_lim_V":0.001,
     "rms_lims_auto":true,
     "max_bunch_length_ns":10.0,
     "rms_window_size":2.5,
-    "current_calibration_coef":0.5,
-    "probe_to_RF_coef":7250
+    "current_calibration_coef":0.425,
+    "probe_to_RF_coef":7250,
+    "bunch_phase_const_deg":163
 }

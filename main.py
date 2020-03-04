@@ -80,11 +80,12 @@ rms_calculation_max_text = TextInput(
 table_source = ColumnDataSource()
 
 columns = [
+        TableColumn(field="acnet_name", title="ACNET device"),
         TableColumn(field="quantities", title="Quantity"),
         TableColumn(field="values", title="Value"),
     ]
 data_table = DataTable(source=table_source, columns=columns,
-                       width=300, height=160)
+                       width=300, height=220, index_position=None)
 
 reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
 oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
@@ -115,6 +116,8 @@ if not use_test_data:
     bottom = -offset-half_span
 else:
     bottom, top = get_from_config("y_range")
+
+
 # Set up plot
 plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
@@ -132,6 +135,15 @@ plot.title.text = "Last updated: {}".format(datetime.datetime.now())
 plot.xaxis.axis_label = "Time, ns"
 plot.yaxis.axis_label = "Signal from wall-current monitor, V"
 
+top_span = Span(location=top,
+                dimension='width', line_color='blue',
+                line_dash='dashed', line_width=3)
+plot.add_layout(top_span)
+bottom_span = Span(location=bottom,
+                   dimension='width', line_color='blue',
+                   line_dash='dashed', line_width=3)
+plot.add_layout(bottom_span)
+
 
 rms_calc_left_span = Span(location=get_from_config("x_range")[0],
                           dimension='height', line_color='green',
@@ -146,13 +158,11 @@ plot.add_layout(rms_calc_right_span)
 
 def update_vertical_span():
     offset = conn.get_offset()
-    print("offset = ", offset)
     volt_div = conn.get_volt_div()
     target = 3*volt_div
     while True:
         conn.set_offset(target)
         of = conn.get_offset()
-        print("of = ", of)
         if np.abs(of-target)/target < 0.05:
             break
     half_span = volt_div*4
@@ -160,6 +170,8 @@ def update_vertical_span():
     bottom = -offset-half_span
     plot.y_range.start = bottom
     plot.y_range.end = top
+    top_span.location = top
+    bottom_span.location = bottom
 
 
 button_increase = Button(
@@ -178,12 +190,9 @@ def button_increase_callback(event):
         pass
     else:
         target = min(volt_div*2, 2.5)
-        print("target = ", target)
         while True:
             conn.set_volt_div(target)
-            print("set")
             vd = conn.get_volt_div()
-            print("vd = ", vd)
             if np.abs(vd-target)/target < 0.05:
                 break
         update_vertical_span()
@@ -196,17 +205,13 @@ toggle_decrease = Toggle(label="Decrease", button_type="success",
 
 def button_decrease_callback(event):
     volt_div = conn.get_volt_div()
-    print("volt_div = ", volt_div)
     if volt_div == 0.002:
         pass
     else:
         target = max(volt_div*0.5, 0.002)
-        print("target = ", target)
         while True:
             conn.set_volt_div(target)
-            print("set")
             vd = conn.get_volt_div()
-            print(vd)
             if np.abs(vd-target)/target < 0.05:
                 break
         update_vertical_span()
@@ -214,7 +219,7 @@ def button_decrease_callback(event):
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
-    bottom = plot.y_range.start
+    bottom = bottom_span.location
     if m < (6/7+0.05*1/7)*bottom:
         return 1
     elif m > (3/7-0.05*1/7)*bottom:
@@ -222,18 +227,6 @@ def check_if_need_update_vertical_span(original_signal):
     else:
         return 0
 
-    # if (m > -0.010) and (bottom > -0.040):
-    #     return 0
-    # elif m > -5.0:
-    #     if m < 0.9*bottom:
-    #         return 1
-    #     elif m > 0.9*bottom*0.5:
-    #         return -1
-    # else:
-    #     return 0
-
-
-# end vertical span of the oscilloscope
 
 cutoff_slider = Slider(
     start=0,
@@ -241,6 +234,13 @@ cutoff_slider = Slider(
     value=max(bpm.fourier_frequencies)/2,
     step=.1,
     title="Freq. Cutoff for Transmission Coefficients, GHz")
+
+phase_const_slider = Slider(
+    start=130,
+    end=180,
+    value=get_from_config("bunch_phase_const_deg"),
+    step=0.1,
+    title="Bunch phase constant")
 
 
 def inputs_callback(attrname, old, new):
@@ -262,7 +262,7 @@ rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
                 div_rms, options_rms,
                 rms_calc_row, data_table, cutoff_slider, div, options_vert,
-                row(toggle_decrease, toggle_increase))
+                row(toggle_decrease, toggle_increase), phase_const_slider)
 
 
 curdoc().add_root(row(inputs, plot))
@@ -276,7 +276,12 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
-        update_successful = bpm.update_data(testing=use_test_data)
+        update_successful_WCM = bpm.update_data(testing=use_test_data)
+        if not update_successful_WCM:
+            raise Exception("Couldn't update WCM signal")
+        update_successful_RF = rf.update_data(testing=use_test_data)
+        if not update_successful_RF:
+            raise Exception("Couldn't update RF probe signal")
         bpm.perform_fft()
         bpm.perform_signal_reconstruction()
         reconstructed_signal = bpm.reconstructed_signal
@@ -284,7 +289,7 @@ def try_update_plot():
         i_min = np.argmin(reconstructed_signal)
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
-            fwhm = rms = phase_angle = current = "nan"
+            fwhm = rms = phase_angle = current = rf_ampl = rf_phase = "nan"
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
@@ -298,23 +303,27 @@ def try_update_plot():
             rms = calc_rms(reconstructed_signal, bpm.time_arr,
                            rms_calc_left_span.location,
                            rms_calc_right_span.location)
-            phase_angle = calc_phase_angle(reconstructed_signal, bpm.time_arr,
-                                           t_RF_ns)
+            rf_ampl, rf_phase = rf.get_amplitude_and_phase()
+            phase_angle =\
+                calc_phase_angle(reconstructed_signal, bpm.time_arr, 0)\
+                - rf_phase-phase_const_slider.value
             current = calc_current(reconstructed_signal, bpm.time_arr,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
-        vals = [fwhm, rms, phase_angle, current]
+        vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase]
         vals_formatted = [length_output(v) for v in vals]
         table_data = dict(
+            acnet_name=["N:IWCMBF", "N:WCMBR", "N:IWCMBP",
+                        "N:IWCMI", "N:IRFEPA", "N:IRFEPP"],
             quantities=["FWHM length, cm", "RMS length, cm",
-                        "Phase angle, deg.", "Current, mA"],
+                        "Bunch phase, deg.", "Current, mA",
+                        "RF Amplitude, V", "RF Phase, deg."],
             values=vals_formatted)
         table_source.data = table_data
-        data_logging.add_record((fwhm, rms, rms_calc_left_span.location,
-                                 rms_calc_right_span.location,
-                                 cutoff_slider.value, phase_angle,
-                                 current))
-        acnet_logger.send_to_ACNET(fwhm, rms)
+        data_logging.add_record(vals+[rms_calc_left_span.location,
+                                rms_calc_right_span.location,
+                                cutoff_slider.value])
+        acnet_logger.send_to_ACNET(vals)
         reconstructed_line_source.data =\
             dict(x=bpm.time_arr[:len(reconstructed_signal)],
                  y=reconstructed_signal)
@@ -324,7 +333,6 @@ def try_update_plot():
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if options_vert.active:
             vs = check_if_need_update_vertical_span(original_signal)
-            print("vs = ", vs)
             if vs == 1:
                 button_increase_callback(1)
             elif vs == -1:
@@ -340,4 +348,4 @@ def try_update_plot():
         print("Exception happened in try_update_plot:", e)
 
 
-curdoc().add_periodic_callback(try_update_plot, 1000)
+curdoc().add_periodic_callback(try_update_plot, 500)

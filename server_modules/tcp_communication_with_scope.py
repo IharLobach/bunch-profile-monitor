@@ -52,7 +52,7 @@ class ConnectionToScope():
         return self.get_waveform_generic(self.quiery_waveform_WCM)
 
     def get_waveform_RF(self):
-        return self.get_waveform(self.quiery_waveform_RF_probe)
+        return self.get_waveform_generic(self.quiery_waveform_RF_probe)
 
     def get_volt_div(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -87,7 +87,7 @@ class ConnectionToScope():
                 '{}'.format(volt_div).encode()+b' V\n'
             # print(command_volt_div)
             sock.sendall(command_volt_div)
-            time.sleep(0.5)
+            time.sleep(0.25)
 
     def get_offset(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -122,7 +122,7 @@ class ConnectionToScope():
                 '{}'.format(offset).encode()+b' V\n'
             # print(command_offset)
             sock.sendall(command_offset)
-            time.sleep(0.5)
+            time.sleep(0.25)
 
 
 if __name__ == "__main__":

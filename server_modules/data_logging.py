@@ -27,7 +27,7 @@ def db_communication(func):
 @db_communication
 def add_record(c, tp):
     sql_command = '''INSERT INTO log
-    VALUES (strftime("%Y-%m-%d %H:%M:%f","now","localtime"),?,?,?,?,?,?,?)'''
+    VALUES (strftime("%Y-%m-%d %H:%M:%f","now","localtime"),?,?,?,?,?,?,?,?,?)'''
     c.execute(sql_command, tp)
 
 
@@ -57,9 +57,11 @@ class ACNET_logger():
         self.UDP_PORT = UDP_PORT
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def send_to_ACNET(self, fwhm, rms):
-        MESSAGE = "{}|{}".format(fwhm, rms)
-        self.sock.sendto(MESSAGE.encode(), (self.UDP_IP, self.UDP_PORT))
+    def send_to_ACNET(self, vals):
+        MESSAGE = ""  # "{}|{}".format(fwhm, rms)
+        for v in vals:
+            MESSAGE += "{}|".format(v)
+        self.sock.sendto(MESSAGE[:-1].encode(), (self.UDP_IP, self.UDP_PORT))
 
 
 def prep_data_to_save(data_to_save_dict):
