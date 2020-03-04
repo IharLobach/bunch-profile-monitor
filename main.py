@@ -17,6 +17,7 @@ import queue
 import pandas as pd
 import os
 import sys
+import signal
 import time
 from server_modules.bunch_profile_monitor_data_updater import bpm_data_updater
 from server_modules.initializations_for_gui import \
@@ -30,9 +31,6 @@ import server_modules.data_logging as data_logging
 from server_modules.data_logging import data_logger_cleaner
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 
-# new_data_to_show_queue = queue.LifoQueue(1)
-# new_data_to_save_queue = queue.LifoQueue(1)
-
 
 use_test_data = get_from_config("use_test_data")
 if not use_test_data:
@@ -40,10 +38,17 @@ if not use_test_data:
 else:
     conn = None
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
-# t = bpm_data_updater(bpm, use_test_data,
-#                      signal_transfer_line, new_data_to_show_queue,
-#                      new_data_to_save_queue)
-# t.start()
+
+
+def sigint_handler(signal, frame):
+    if conn:
+        print("Closing connection to the scope.")
+        conn.close()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, sigint_handler)
+
 
 t_RF_ns = get_from_config("t_RF_ns")
 

@@ -6,13 +6,13 @@ import time
 
 
 class ConnectionToScope():
-    timeout = 5  # sec
+    timeout = 1  # sec
     HOST = get_from_config("oscilloscope_ip")
     PORT = get_from_config("oscilloscope_port")
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-                b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?"
+                b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?\n"
     quiery_waveform = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE"
+        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE\n"
     quiery_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0e C3:VOLT_DIV?\n'
     quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
