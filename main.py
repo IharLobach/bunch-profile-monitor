@@ -40,15 +40,6 @@ else:
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
 
 
-def sigint_handler(signal, frame):
-    if conn:
-        print("Closing connection to the scope.")
-        conn.close()
-    sys.exit(0)
-
-
-signal.signal(signal.SIGINT, sigint_handler)
-
 
 t_RF_ns = get_from_config("t_RF_ns")
 
@@ -314,9 +305,9 @@ def try_update_plot():
                                  cutoff_slider.value, phase_angle,
                                  current))
         acnet_logger.send_to_ACNET(fwhm, rms)
-        reconstructed_line_source.data = dict(x=bpm.time_arr,
+        reconstructed_line_source.data = dict(x=bpm.time_arr[:len(reconstructed_signal)],
                                               y=reconstructed_signal)
-        oscilloscope_line_source.data = dict(x=bpm.time_arr,
+        oscilloscope_line_source.data = dict(x=bpm.time_arr[:len(original_signal)],
                                              y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if toggle.active:
@@ -338,4 +329,4 @@ def try_update_plot():
         print("Exception happened in try_update_plot:", e)
 
 
-curdoc().add_periodic_callback(try_update_plot, 500)
+curdoc().add_periodic_callback(try_update_plot, 1000)
