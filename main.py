@@ -4,10 +4,10 @@ import json
 from bokeh.io import curdoc
 from bokeh.layouts import column, row, layout
 from bokeh.models import \
-     ColumnDataSource, Slider, TextInput, Button, Div, Toggle
+     ColumnDataSource, Slider, TextInput, Button, Div, Toggle, RadioButtonGroup
 from bokeh.plotting import figure
 from bokeh.events import ButtonClick
-from bokeh.models import DataTable, DateFormatter, TableColumn, Span
+from bokeh.models import DataTable, DateFormatter, TableColumn, Span, Range1d
 
 
 from server_modules.tcp_communication_with_scope import ConnectionToScope
@@ -63,8 +63,9 @@ button_save_full_plot_data = Button(
 div_rms = Div(text="Calculation limits (ns) for RMS length and Current:",
               width=300)
 
-toggle_rms = Toggle(label="Manual/Auto", button_type="success",
-                    width=300, active=get_from_config("rms_lims_auto"))
+options_rms = RadioButtonGroup(labels=["Manual", "Auto"],
+    active=int(get_from_config("rms_lims_auto")))
+
 
 rms_calculation_min_text = TextInput(
     value=length_output(get_from_config("x_range")[0]), width=145)
@@ -94,13 +95,29 @@ def button_save_full_plot_data_callback(event):
 
 button_save_full_plot_data.on_event(ButtonClick,
                                     button_save_full_plot_data_callback)
+
+div = Div(text="Oscilloscope's vertical scale:", width=300)
+
+options_vert = RadioButtonGroup(labels=["Manual", "Auto"],
+    active=int(get_from_config("vertical_scale_auto")))
+
+if options_vert.active:
+    offset = conn.get_offset()
+    volt_div = conn.get_volt_div()
+    half_span = volt_div*4
+    top = half_span-offset
+    bottom = -offset-half_span
+else:
+    bottom, top = get_from_config("y_range")
 # Set up plot
 plot = figure(plot_height=400, plot_width=700,
               title="Last updated: {}".format(datetime.datetime.now()),
               tools="crosshair,pan,reset,save,wheel_zoom,box_zoom",
               x_range=get_from_config("x_range"),
-              y_range=get_from_config("y_range"),
+              y_range=[bottom, top],
               sizing_mode="scale_both")
+
+
 
 plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
           line_alpha=0.6, color="green", legend_label="Original")
@@ -122,32 +139,6 @@ rms_calc_right_span = Span(location=get_from_config("x_range")[1],
                            line_dash='dashed', line_width=3)
 plot.add_layout(rms_calc_right_span)
 
-# vertical span of the oscilloscope
-
-div = Div(text="Oscilloscope's vertical scale:", width=300)
-
-toggle = Toggle(label="Manual/Auto", button_type="success",
-                width=300, active=get_from_config("vertical_scale_auto"))
-
-
-if toggle.active:
-    offset = conn.get_offset()
-    volt_div = conn.get_volt_div()
-    half_span = volt_div*4
-    top = half_span-offset
-    bottom = -offset-half_span
-else:
-    bottom, top = get_from_config("y_range")
-
-top_span = Span(location=top,
-                dimension='width', line_color='blue',
-                line_dash='dashed', line_width=3)
-plot.add_layout(top_span)
-bottom_span = Span(location=bottom,
-                   dimension='width', line_color='blue',
-                   line_dash='dashed', line_width=3)
-plot.add_layout(bottom_span)
-
 
 def update_vertical_span():
     offset = conn.get_offset()
@@ -156,8 +147,8 @@ def update_vertical_span():
     half_span = volt_div*4
     top = half_span-offset
     bottom = -offset-half_span
-    top_span.location = top
-    bottom_span.location = bottom
+    plot.y_range.start = bottom
+    plot.y_range.end = top
 
 
 button_increase = Button(
@@ -212,12 +203,13 @@ def button_decrease_callback(event):
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
-    if (m > -0.010) and (bottom_span.location > -0.040):
+    bottom = plot.y_range.start
+    if (m > -0.010) and (bottom > -0.040):
         return 0
     elif m > -5.0:
-        if m < 0.9*bottom_span.location:
+        if m < 0.9*bottom:
             return 1
-        elif m > 0.9*bottom_span.location*0.5:
+        elif m > 0.9*bottom*0.5:
             return -1
     else:
         return 0
@@ -234,7 +226,7 @@ cutoff_slider = Slider(
 
 
 def inputs_callback(attrname, old, new):
-    if not toggle_rms.active:
+    if not options_rms.active:
         rms_calc_left = float(rms_calculation_min_text.value)
         rms_calc_right = float(rms_calculation_max_text.value)
         rms_calc_left_span.location = rms_calc_left
@@ -250,8 +242,8 @@ for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(saved_files_folder_text, button_save_full_plot_data,
-                div_rms, toggle_rms,
-                rms_calc_row, data_table, cutoff_slider, div, toggle,
+                div_rms, options_rms,
+                rms_calc_row, data_table, cutoff_slider, div, options_vert,
                 row(toggle_decrease, toggle_increase))
 
 
@@ -278,7 +270,7 @@ def try_update_plot():
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
-            if toggle_rms.active and (fwhm != 'nan'):
+            if options_rms.active and (fwhm != 'nan'):
                 rms_left_lim = t_min-rms_window*fwhm/30
                 rms_right_lim = t_min+rms_window*fwhm/30
                 rms_calc_left_span.location = rms_left_lim
@@ -310,7 +302,7 @@ def try_update_plot():
         oscilloscope_line_source.data = dict(x=bpm.time_arr[:len(original_signal)],
                                              y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
-        if toggle.active:
+        if options_vert.active:
             vs = check_if_need_update_vertical_span(original_signal)
             print("vs = ", vs)
             if vs == 1:
@@ -319,7 +311,6 @@ def try_update_plot():
                 button_decrease_callback(1)
         else:
             if toggle_increase.active:
-                print("Increase active")
                 button_increase_callback(1)
                 toggle_increase.active = False
             if toggle_decrease.active:
