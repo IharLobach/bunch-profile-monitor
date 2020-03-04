@@ -32,6 +32,7 @@ from server_modules.data_logging import data_logger_cleaner
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 from physics_engine.rf_probe import RFProbe
 
+iota_freq_MHz = 7.5
 
 use_test_data = get_from_config("use_test_data")
 if not use_test_data:
@@ -41,7 +42,7 @@ else:
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
 rf = RFProbe(
     get_from_config("probe_to_RF_coef"),
-    7.5,  # IOTA freq MHz
+    iota_freq_MHz,  # IOTA freq MHz
     conn,
     get_from_config("dt_ns"))
 
@@ -305,7 +306,10 @@ def try_update_plot():
                            rms_calc_right_span.location)
             rf_ampl, rf_phase = rf.get_amplitude_and_phase()
             phase_angle =\
-                calc_phase_angle(reconstructed_signal, bpm.time_arr, 0)\
+                calc_phase_angle(reconstructed_signal, bpm.time_arr,
+                                 rms_calc_left_span.location,
+                                 rms_calc_right_span.location,
+                                 iota_freq_MHz)\
                 - rf_phase-phase_const_slider.value
             current = calc_current(reconstructed_signal, bpm.time_arr,
                                    rms_calc_left_span.location,

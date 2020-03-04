@@ -76,10 +76,18 @@ def calc_rms(reconstructed_signal, time_arr, left_lim, right_lim):
 
 
 @nan_support
-def calc_phase_angle(reconstructed_signal, time_arr, t_RF):
-    i_min = np.argmin(reconstructed_signal)
-    delta_t = time_arr[i_min]-t_RF
-    return delta_t/(133.0/4.0)/np.pi*180.0
+def calc_phase_angle(reconstructed_signal, time_arr, left_lim, right_lim,
+                     iota_freq_MHz):
+    average_level = calc_average_level(reconstructed_signal, time_arr,
+                                       left_lim, right_lim)
+    y = reconstructed_signal-average_level
+    time_arr_within_lims, y_within_lims = \
+        get_signal_within_lims(y, time_arr, left_lim, right_lim)
+    time_center = np.average(time_arr_within_lims, weights=-y_within_lims)
+    # i_min = np.argmin(reconstructed_signal)
+    # delta_t = time_arr[i_min]
+    delta_t = time_center
+    return delta_t*4*iota_freq_MHz/1000/np.pi*180.0
 
 
 @nan_support
