@@ -11,14 +11,16 @@ class ConnectionToScope():
     PORT = get_from_config("oscilloscope_port")
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
                 b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?\n"
-    quiery_waveform = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
+    quiery_waveform_WCM = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
         b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE\n"
+    quiery_waveform_RF_probe = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
+        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C2:INSPECT? SIMPLE\n"
     quiery_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0e C3:VOLT_DIV?\n'
     quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
 
-    def get_waveform(self):
+    def get_waveform_generic(self, quiery):
         allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                            '.', 'e', '+', '-', ' ')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -28,8 +30,8 @@ class ConnectionToScope():
                     sock.connect((self.HOST, self.PORT))
                     break
                 except Exception as e:
-                    pass#print(e)
-            sock.sendall(self.quiery_waveform)
+                    pass  # print(e)
+            sock.sendall(quiery)
             received = b''
             while True:
                 received += sock.recv(4096)
@@ -45,7 +47,13 @@ class ConnectionToScope():
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
             return v_arr
-    
+
+    def get_waveform(self):
+        return self.get_waveform_generic(self.quiery_waveform_WCM)
+
+    def get_waveform_RF(self):
+        return self.get_waveform(self.quiery_waveform_RF_probe)
+
     def get_volt_div(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
@@ -54,7 +62,7 @@ class ConnectionToScope():
                     sock.connect((self.HOST, self.PORT))
                     break
                 except Exception as e:
-                    pass#print(e)
+                    pass  # print(e)
             sock.sendall(self.quiery_volt_div)
             received = b''
             while True:
@@ -81,7 +89,6 @@ class ConnectionToScope():
             sock.sendall(command_volt_div)
             time.sleep(0.5)
 
-    
     def get_offset(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
@@ -90,7 +97,7 @@ class ConnectionToScope():
                     sock.connect((self.HOST, self.PORT))
                     break
                 except Exception as e:
-                    pass#print(e)
+                    pass #  print(e)
             sock.sendall(self.quiery_offset)
             received = b''
             while True:
@@ -99,7 +106,6 @@ class ConnectionToScope():
                     break
             res = float(re.split(b' ', received)[1])
             return res
-    
 
     def set_offset(self, offset):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -109,7 +115,7 @@ class ConnectionToScope():
                     sock.connect((self.HOST, self.PORT))
                     break
                 except Exception as e:
-                    pass#print(e)
+                    pass  # print(e)
             command_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
                 b' LO\n\x81\x01\x00\x00\x00\x00\x00\x13'\
                 b' C3:OFFSET ' + \

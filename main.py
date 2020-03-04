@@ -30,6 +30,7 @@ from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
 from server_modules.data_logging import data_logger_cleaner
 from server_modules.tcp_communication_with_scope import ConnectionToScope
+from physics_engine.rf_probe import RFProbe
 
 
 use_test_data = get_from_config("use_test_data")
@@ -38,7 +39,11 @@ if not use_test_data:
 else:
     conn = None
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
-
+rf = RFProbe(
+    get_from_config("probe_to_RF_coef"),
+    7.5,  # IOTA freq MHz
+    conn,
+    get_from_config("dt_ns"))
 
 
 t_RF_ns = get_from_config("t_RF_ns")
@@ -64,7 +69,7 @@ div_rms = Div(text="Calculation limits (ns) for RMS length and Current:",
               width=300)
 
 options_rms = RadioButtonGroup(labels=["Manual", "Auto"],
-    active=int(get_from_config("rms_lims_auto")))
+                               active=int(get_from_config("rms_lims_auto")))
 
 
 rms_calculation_min_text = TextInput(
@@ -98,7 +103,8 @@ button_save_full_plot_data.on_event(ButtonClick,
 
 div = Div(text="Oscilloscope's vertical scale:", width=300)
 
-options_vert = RadioButtonGroup(labels=["Manual", "Auto"],
+options_vert = RadioButtonGroup(
+    labels=["Manual", "Auto"],
     active=int(get_from_config("vertical_scale_auto")))
 
 if not use_test_data:
@@ -116,8 +122,6 @@ plot = figure(plot_height=400, plot_width=700,
               x_range=get_from_config("x_range"),
               y_range=[bottom, top],
               sizing_mode="scale_both")
-
-
 
 plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
           line_alpha=0.6, color="green", legend_label="Original")
@@ -149,7 +153,7 @@ def update_vertical_span():
         conn.set_offset(target)
         of = conn.get_offset()
         print("of = ", of)
-        if of == target:
+        if np.abs(of-target)/target < 0.05:
             break
     half_span = volt_div*4
     top = half_span-offset
@@ -170,7 +174,7 @@ toggle_increase = Toggle(label="Increase", button_type="success",
 
 def button_increase_callback(event):
     volt_div = conn.get_volt_div()
-    if volt_div == 2.5:
+    if volt_div == 1.0:
         pass
     else:
         target = min(volt_div*2, 2.5)
@@ -180,9 +184,9 @@ def button_increase_callback(event):
             print("set")
             vd = conn.get_volt_div()
             print("vd = ", vd)
-            if vd == target:
+            if np.abs(vd-target)/target < 0.05:
                 break
-    update_vertical_span()
+        update_vertical_span()
 
 
 toggle_decrease = Toggle(label="Decrease", button_type="success",
@@ -203,23 +207,30 @@ def button_decrease_callback(event):
             print("set")
             vd = conn.get_volt_div()
             print(vd)
-            if vd == target:
+            if np.abs(vd-target)/target < 0.05:
                 break
-    update_vertical_span()
+        update_vertical_span()
 
 
 def check_if_need_update_vertical_span(original_signal):
     m = min(original_signal)
     bottom = plot.y_range.start
-    if (m > -0.010) and (bottom > -0.040):
-        return 0
-    elif m > -5.0:
-        if m < 0.9*bottom:
-            return 1
-        elif m > 0.9*bottom*0.5:
-            return -1
+    if m < (6/7+0.05*1/7)*bottom:
+        return 1
+    elif m > (3/7-0.05*1/7)*bottom:
+        return -1
     else:
         return 0
+
+    # if (m > -0.010) and (bottom > -0.040):
+    #     return 0
+    # elif m > -5.0:
+    #     if m < 0.9*bottom:
+    #         return 1
+    #     elif m > 0.9*bottom*0.5:
+    #         return -1
+    # else:
+    #     return 0
 
 
 # end vertical span of the oscilloscope
@@ -304,10 +315,12 @@ def try_update_plot():
                                  cutoff_slider.value, phase_angle,
                                  current))
         acnet_logger.send_to_ACNET(fwhm, rms)
-        reconstructed_line_source.data = dict(x=bpm.time_arr[:len(reconstructed_signal)],
-                                              y=reconstructed_signal)
-        oscilloscope_line_source.data = dict(x=bpm.time_arr[:len(original_signal)],
-                                             y=original_signal)
+        reconstructed_line_source.data =\
+            dict(x=bpm.time_arr[:len(reconstructed_signal)],
+                 y=reconstructed_signal)
+        oscilloscope_line_source.data =\
+            dict(x=bpm.time_arr[:len(original_signal)],
+                 y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if options_vert.active:
             vs = check_if_need_update_vertical_span(original_signal)

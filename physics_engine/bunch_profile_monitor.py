@@ -62,7 +62,7 @@ class BunchProfileMonitor:
                 self.v_arr = self.connection_to_scope.get_waveform()
                 return True
             except Exception as e:
-                print(e)
+                print("Exception in update data for WCM", e)
                 return False
 
     def perform_fft(self):
