@@ -101,7 +101,7 @@ div = Div(text="Oscilloscope's vertical scale:", width=300)
 options_vert = RadioButtonGroup(labels=["Manual", "Auto"],
     active=int(get_from_config("vertical_scale_auto")))
 
-if options_vert.active:
+if not use_test_data:
     offset = conn.get_offset()
     volt_div = conn.get_volt_div()
     half_span = volt_div*4
@@ -144,6 +144,13 @@ def update_vertical_span():
     offset = conn.get_offset()
     print("offset = ", offset)
     volt_div = conn.get_volt_div()
+    target = 3*volt_div
+    while True:
+        conn.set_offset(target)
+        of = conn.get_offset()
+        print("of = ", of)
+        if of == target:
+            break
     half_span = volt_div*4
     top = half_span-offset
     bottom = -offset-half_span

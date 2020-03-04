@@ -80,6 +80,7 @@ class ConnectionToScope():
             # print(command_volt_div)
             sock.sendall(command_volt_div)
             time.sleep(0.5)
+
     
     def get_offset(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -98,6 +99,24 @@ class ConnectionToScope():
                     break
             res = float(re.split(b' ', received)[1])
             return res
+    
+
+    def set_offset(self, offset):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(self.timeout)
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except Exception as e:
+                    pass#print(e)
+            command_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
+                b' LO\n\x81\x01\x00\x00\x00\x00\x00\x13'\
+                b' C3:OFFSET ' + \
+                '{}'.format(offset).encode()+b' V\n'
+            # print(command_offset)
+            sock.sendall(command_offset)
+            time.sleep(0.5)
 
 
 if __name__ == "__main__":
