@@ -24,7 +24,7 @@ from server_modules.initializations_for_gui import \
      init_bpm_signal_transfer_line
 from server_modules.data_logging import save_full_plot_data
 from physics_engine.bunch_length_estimators import \
-    calc_fwhm, calc_rms, calc_phase_angle, calc_current
+    calc_fwhm, calc_rms, calc_phase_angle, calc_current, calc_fur_length, calc_mad_length
 from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
@@ -290,7 +290,8 @@ def try_update_plot():
         i_min = np.argmin(reconstructed_signal)
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
-            fwhm = rms = phase_angle = current = rf_ampl = rf_phase = "nan"
+            fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
+                 = fur = mad = "nan"
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
@@ -312,6 +313,12 @@ def try_update_plot():
                                  iota_freq_MHz)\
                 - rf_phase-phase_const_slider.value
             current = calc_current(reconstructed_signal, bpm.time_arr,
+                                   rms_calc_left_span.location,
+                                   rms_calc_right_span.location)
+            fur = calc_fur_length(reconstructed_line_source, bpm.time_arr,
+                                   rms_calc_left_span.location,
+                                   rms_calc_right_span.location)
+            mad = calc_mad_length(reconstructed_line_source, bpm.time_arr,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
         vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase]

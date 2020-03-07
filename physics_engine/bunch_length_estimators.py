@@ -98,3 +98,26 @@ def calc_current(reconstructed_signal, time_arr, left_lim, right_lim):
     time_arr_within_lims, y_within_lims = \
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
     return -current_calibration_coef*(-sum(y_within_lims))
+
+
+@nan_support
+def calc_fur_length(reconstructed_signal, time_arr, left_lim, right_lim):
+    average_level = calc_average_level(reconstructed_signal, time_arr,
+                                       left_lim, right_lim)
+    y = reconstructed_signal-average_level
+    time_arr_within_lims, y_within_lims = \
+        get_signal_within_lims(y, time_arr, left_lim, right_lim)
+    dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
+    return 30*dt/2/np.sqrt(np.pi)*(-sum(y_within_lims))**2/sum(y_within_lims**2)
+
+@nan_support
+def calc_mad_length(reconstructed_signal, time_arr, left_lim, right_lim):
+    average_level = calc_average_level(reconstructed_signal, time_arr,
+                                       left_lim, right_lim)
+    y = reconstructed_signal-average_level
+    time_arr_within_lims, y_within_lims = \
+        get_signal_within_lims(y, time_arr, left_lim, right_lim)
+    time_center = np.average(time_arr_within_lims, weights=-y_within_lims)
+    mad = np.average(np.absolute(time_arr_within_lims-time_center),
+                          weights=-y_within_lims)
+    return 30*mad

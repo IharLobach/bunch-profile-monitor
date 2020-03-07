@@ -11,7 +11,7 @@
     "t_RF_ns":20.0,
     "x_range":[45,65],
     "y_range":[-0.875,0.125],
-    "low_signal_lim_V":0.001,
+    "low_signal_lim_V":0.00,
     "rms_lims_auto":true,
     "max_bunch_length_ns":10.0,
     "rms_window_size":2.5,

@@ -6,7 +6,7 @@ import time
 
 
 class ConnectionToScope():
-    timeout = 1  # sec
+    timeout = 5  # sec
     HOST = get_from_config("oscilloscope_ip")
     PORT = get_from_config("oscilloscope_port")
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
