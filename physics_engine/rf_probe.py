@@ -30,11 +30,11 @@ class RFProbe():
                                               "bunch-profile-monitor",
                                               "signal_transfer_line_data",
                                               "v_arr_test.csv"), header=None)
-        v_arr = v_arr_data.values.transpose()[0]
+        self.v_arr = v_arr_data.values.transpose()[0]
         # random additive here
-        time_arr = self.time_arr()
+        time_arr = self.time_arr
         self.v_arr = np.sin(2*np.pi*4/133*time_arr)\
-            + np.random.uniform(-0.005, 0.005, len(v_arr))
+            + np.random.uniform(-0.005, 0.005, len(self.v_arr))
         return self.v_arr
 
     def update_data(self, testing=False):

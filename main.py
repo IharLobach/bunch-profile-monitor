@@ -315,10 +315,10 @@ def try_update_plot():
             current = calc_current(reconstructed_signal, bpm.time_arr,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
-            fur = calc_fur_length(reconstructed_line_source, bpm.time_arr,
+            fur = calc_fur_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-            mad = calc_mad_length(reconstructed_line_source, bpm.time_arr,
+            mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
         vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase, fur]

@@ -19,6 +19,7 @@ def nan_support(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
+            print("In nan_support: ", e)
             return "nan"
     return wrapper
 
@@ -109,6 +110,7 @@ def calc_fur_length(reconstructed_signal, time_arr, left_lim, right_lim):
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
     dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
     return 30*dt/2/np.sqrt(np.pi)*(-sum(y_within_lims))**2/sum(y_within_lims**2)
+
 
 @nan_support
 def calc_mad_length(reconstructed_signal, time_arr, left_lim, right_lim):
