@@ -49,7 +49,7 @@ class ConnectionToScope():
             received3 = bytes(received2).strip()
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
-            return v_arr[:min(len(v_arr, self.desired_waveform_length_idx))]
+            return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
 
     def get_waveform(self):
         return self.get_waveform_generic(self.quiery_waveform_WCM)
