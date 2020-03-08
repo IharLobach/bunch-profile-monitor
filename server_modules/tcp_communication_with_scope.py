@@ -19,6 +19,9 @@ class ConnectionToScope():
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0e C3:VOLT_DIV?\n'
     quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
+ 
+    def __init__(self, desired_waveform_length_ns, dt_ns):
+        self.desired_waveform_length_idx = desired_waveform_length_ns // dt_ns
 
     def get_waveform_generic(self, quiery):
         allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -46,7 +49,7 @@ class ConnectionToScope():
             received3 = bytes(received2).strip()
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
-            return v_arr
+            return v_arr[:min(len(v_arr, self.desired_waveform_length_idx))]
 
     def get_waveform(self):
         return self.get_waveform_generic(self.quiery_waveform_WCM)

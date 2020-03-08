@@ -24,7 +24,8 @@ from server_modules.initializations_for_gui import \
      init_bpm_signal_transfer_line
 from server_modules.data_logging import save_full_plot_data
 from physics_engine.bunch_length_estimators import \
-    calc_fwhm, calc_rms, calc_phase_angle, calc_current, calc_fur_length, calc_mad_length
+    calc_fwhm, calc_rms, calc_phase_angle, calc_current,\
+    calc_fur_length, calc_mad_length
 from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
@@ -33,10 +34,11 @@ from server_modules.tcp_communication_with_scope import ConnectionToScope
 from physics_engine.rf_probe import RFProbe
 
 iota_freq_MHz = 7.5
+dt = get_from_config("dt_ns")
 
 use_test_data = get_from_config("use_test_data")
 if not use_test_data:
-    conn = ConnectionToScope()
+    conn = ConnectionToScope(get_from_config("desired_waveform_length_ns"), dt)
 else:
     conn = None
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
@@ -44,10 +46,8 @@ rf = RFProbe(
     get_from_config("probe_to_RF_coef"),
     iota_freq_MHz,  # IOTA freq MHz
     conn,
-    get_from_config("dt_ns"))
+    dt)
 
-
-t_RF_ns = get_from_config("t_RF_ns")
 
 dlc_thread = data_logger_cleaner(
     logging_length=get_from_config("logging_length"),
