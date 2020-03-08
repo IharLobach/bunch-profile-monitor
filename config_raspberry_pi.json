@@ -9,7 +9,7 @@
     "oscilloscope_port":1861,
     "vertical_scale_auto":true,
     "desired_waveform_length_ns":133.3,
-    "x_range":[45,65],
+    "x_range":[0,133.3],
     "y_range":[-0.875,0.125],
     "low_signal_lim_V":0.00,
     "rms_lims_auto":true,
