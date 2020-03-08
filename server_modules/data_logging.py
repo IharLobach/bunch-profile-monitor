@@ -27,7 +27,7 @@ def db_communication(func):
 @db_communication
 def add_record(c, tp):
     sql_command = '''INSERT INTO log
-    VALUES (strftime("%Y-%m-%d %H:%M:%f","now","localtime"),?,?,?,?,?,?,?,?,?)'''
+    VALUES (strftime("%Y-%m-%d %H:%M:%f","now","localtime"),?,?,?,?,?,?,?,?,?,?)'''
     c.execute(sql_command, tp)
 
 
