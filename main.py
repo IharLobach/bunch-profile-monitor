@@ -84,7 +84,7 @@ columns = [
         TableColumn(field="values", title="Value"),
     ]
 data_table = DataTable(source=table_source, columns=columns,
-                       width=300, height=220, index_position=None)
+                       width=300, height=280, index_position=None)
 
 reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
 oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
