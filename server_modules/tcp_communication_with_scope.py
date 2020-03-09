@@ -22,7 +22,8 @@ class ConnectionToScope():
  
     def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
         self.testing = testing
-        self.desired_waveform_length_idx = desired_waveform_length_ns // dt_ns
+        self.desired_waveform_length_idx =\
+            int(desired_waveform_length_ns // dt_ns)
     
     def wf_length(self, v_arr):
         return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
