@@ -1,5 +1,6 @@
 import numpy as np
 from server_modules.config_requests import get_from_config
+from scipy.optimize import curve_fit
 current_calibration_coef = get_from_config("current_calibration_coef")
 
 
@@ -123,3 +124,36 @@ def calc_mad_length(reconstructed_signal, time_arr, left_lim, right_lim):
     mad = np.average(np.absolute(time_arr_within_lims-time_center),
                           weights=-y_within_lims)
     return 30*mad
+
+
+def calc_ramsg_currentg(reconstructed_signal, time_arr, left_lim, right_lim,
+                        fwhm, fit_points=None):
+    average_level = calc_average_level(reconstructed_signal, time_arr,
+                                       left_lim, right_lim)
+    y = reconstructed_signal-average_level
+    time_arr_within_lims, y_within_lims = \
+        get_signal_within_lims(y, time_arr, left_lim, right_lim)
+    i_min = np.argmin(y_within_lims)
+    t_min = time_arr_within_lims[i_min]
+    A0 = y_within_lims[i_min]
+    mu0 = t_min
+    sigma0 = fwhm/2.3551
+    p0 = (A0, mu0, sigma0)
+    
+    def gauss(t, *p):
+        A, mu, sigma = p
+        return A*np.exp(-(t-mu)**2/(2.*sigma**2))
+
+    t1 = t_min-fwhm
+    t2 = t_min+fwhm
+    coeff, var_matrix = curve_fit(gauss, time_arr_within_lims, y_within_lims,
+                                  p0=p0, bounds=([2*A0, t1, 0], [0, t2, 2*fwhm]))
+    Af, muf, sigmaf = coeff
+    sigmaf = np.absolute(sigmaf)
+    plot_data = None
+    if fit_points:
+        x_data = np.linspace(time_arr_within_lims[0], time_arr_within_lims[1],
+                             fit_points)
+        y_data = average_level+gauss(x_data, Af, muf, sigmaf)
+        plot_data = (x_data, y_data)
+    return sigmaf, Af*np.sqrt(2*np.pi)*sigmaf, plot_data

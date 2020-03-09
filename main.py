@@ -25,7 +25,7 @@ from server_modules.initializations_for_gui import \
 from server_modules.data_logging import save_full_plot_data
 from physics_engine.bunch_length_estimators import \
     calc_fwhm, calc_rms, calc_phase_angle, calc_current,\
-    calc_fur_length, calc_mad_length
+    calc_fur_length, calc_mad_length, calc_ramsg_currentg
 from server_modules.output_formatting import length_output
 from server_modules.config_requests import get_from_config
 import server_modules.data_logging as data_logging
@@ -289,6 +289,7 @@ def try_update_plot():
         reconstructed_signal = bpm.reconstructed_signal
         original_signal = bpm.v_arr
         i_min = np.argmin(reconstructed_signal)
+        m = reconstructed_signal[i_min]
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
             fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
@@ -322,7 +323,11 @@ def try_update_plot():
             mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-            rmsg = currentg = "nan"
+            rmsg, currentg, gauss_plot_data = \
+                calc_ramsg_currentg(reconstructed_signal, bpm.time_arr,
+                                    rms_calc_left_span.location,
+                                    rms_calc_right_span.location,
+                                    fwhm)
         vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase, fur,
                 mad, rmsg, currentg]
         vals_formatted = [length_output(v) for v in vals]
@@ -334,7 +339,8 @@ def try_update_plot():
                         "Bunch phase, deg.", "Current, mA",
                         "RF Amplitude, V", "RF Phase, deg.",
                         "FUR bunch length, cm", "MAD bunch length, cm",
-                        "Gaussian fit bunch length, cm", "Gaussian fit current, mA"],
+                        "Gaussian fit bunch length, cm",
+                        "Gaussian fit current, mA"],
             values=vals_formatted)
         table_source.data = table_data
         data_logging.add_record(vals+[rms_calc_left_span.location,

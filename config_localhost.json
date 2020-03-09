@@ -11,7 +11,7 @@
     "desired_waveform_length_ns":133.3,
     "x_range":[0,40],
     "y_range":[-0.875,0.125],
-    "low_signal_lim_V":0.00,
+    "low_signal_lim_V":0.0004,
     "rms_lims_auto":true,
     "max_bunch_length_ns":10.0,
     "rms_window_size":2.5,
