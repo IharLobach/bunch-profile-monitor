@@ -23,6 +23,7 @@ class ConnectionToScope():
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
  
     def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
+        self.dt = dt_ns
         self.testing = testing
         self.desired_waveform_length_idx =\
             int(desired_waveform_length_ns // dt_ns)
@@ -83,7 +84,7 @@ class ConnectionToScope():
                                               "v_arr_test.csv"), header=None)
         self.v_arr = v_arr_data.values.transpose()[0]
         # random additive here
-        time_arr = self.time_arr
+        time_arr = np.arange(len(self.v_arr))*self.dt
         self.v_arr = np.sin(2*np.pi*4/133*time_arr)\
             + np.random.uniform(-0.005, 0.005, len(self.v_arr))
         return self.v_arr

@@ -88,6 +88,7 @@ data_table = DataTable(source=table_source, columns=columns,
 
 reconstructed_line_source = ColumnDataSource(dict(x=[], y=[]))
 oscilloscope_line_source = ColumnDataSource(dict(x=[], y=[]))
+gaussian_fit_line_source = ColumnDataSource(dict(x=[], y=[]))
 
 
 def button_save_full_plot_data_callback(event):
@@ -129,6 +130,9 @@ plot.line('x', 'y', source=oscilloscope_line_source, line_width=3,
           line_alpha=0.6, color="green", legend_label="Original")
 plot.line('x', 'y', source=reconstructed_line_source, line_width=3,
           line_alpha=0.6, color="red", legend_label="Reconstructed")
+plot.line('x', 'y', source=gaussian_fit_line_source, line_width=3,
+          line_alpha=0.6, color="black", legend_label="Gaussian fit")
+
 plot.legend.location = "bottom_right"
 plot.title.text = "Last updated: {}".format(datetime.datetime.now())
 plot.xaxis.axis_label = "Time, ns"
@@ -320,11 +324,19 @@ def try_update_plot():
             mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-            rmsg, currentg, gauss_plot_data = \
-                calc_ramsg_currentg(reconstructed_signal, bpm.time_arr,
-                                    rms_calc_left_span.location,
-                                    rms_calc_right_span.location,
-                                    fwhm)
+            try:
+                rmsg, currentg, gauss_plot_data = \
+                    calc_ramsg_currentg(reconstructed_signal, bpm.time_arr,
+                                        rms_calc_left_span.location,
+                                        rms_calc_right_span.location,
+                                        fwhm, 1000)
+                gaussian_fit_line_source.data =\
+                    dict(x=gauss_plot_data[0],
+                         y=gauss_plot_data[1])
+            except Exception as e:
+                print("Exception in gaussian fit: ", e)
+                rmsg = currentg = "nan"
+                gaussian_fit_line_source.data = dict(x=[], y=[])
         vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase, fur,
                 mad, rmsg, currentg]
         vals_formatted = [length_output(v) for v in vals]
