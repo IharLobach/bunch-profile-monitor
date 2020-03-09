@@ -292,7 +292,7 @@ def try_update_plot():
         t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
             fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
-                 = fur = mad = "nan"
+                 = fur = mad = rmsg = currentg = "nan"
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
@@ -322,15 +322,19 @@ def try_update_plot():
             mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-        vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase, fur]
+            rmsg = currentg = "nan"
+        vals = [fwhm, rms, phase_angle, current, rf_ampl, rf_phase, fur,
+                mad, rmsg, currentg]
         vals_formatted = [length_output(v) for v in vals]
         table_data = dict(
             acnet_name=["N:IWCMBF", "N:WCMBR", "N:IWCMBP",
-                        "N:IWCMI", "N:IRFEPA", "N:IRFEPP", "N:IWCMBE"],
+                        "N:IWCMI", "N:IRFEPA", "N:IRFEPP", "N:IWCMBE",
+                        "N:IWCMBM", "N:IWCMBG", "N:IWCMIG"],
             quantities=["FWHM length, cm", "RMS length, cm",
                         "Bunch phase, deg.", "Current, mA",
                         "RF Amplitude, V", "RF Phase, deg.",
-                        "FUR bunch length, cm"],
+                        "FUR bunch length, cm", "MAD bunch length, cm",
+                        "Gaussian fit bunch length, cm", "Gaussian fit current, mA"],
             values=vals_formatted)
         table_source.data = table_data
         data_logging.add_record(vals+[rms_calc_left_span.location,
