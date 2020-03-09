@@ -69,11 +69,9 @@ class ConnectionToScope():
         self.v_arr = v_arr
         return self.v_arr
 
-    @self.wf_length
     def get_waveform(self):
         return self.get_waveform_generic(self.quiery_waveform_WCM)
 
-    @self.wf_length
     def get_waveform_RF(self):
         return self.get_waveform_generic(self.quiery_waveform_RF_probe)
 
