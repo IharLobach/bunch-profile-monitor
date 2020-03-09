@@ -21,16 +21,15 @@ def init_signal_transfer_line(freqs):
 def init_bpm_signal_transfer_line(useTestData, conn):
     dt_ns = get_from_config("dt_ns")
     bpm = BunchProfileMonitor(connection_to_scope=conn, dt=dt_ns)
-    # attempt = 0
-    # while True:
-    #     if attempt > 5:
-    #         raise Exception('''Attempted to connect to the scope 5 times.
-    #      No luck.''')
-    #     if bpm.update_data():
-    #         break
-    #     attempt += 1
-    # bpm.perform_fft()
+    attempt = 0
+    while True:
+        if attempt > 5:
+            raise Exception('''Attempted to get WCM data 5 times. No luck.''')
+        if bpm.update_data():
+            break
+        attempt += 1
+    bpm.perform_fft()
     signal_transfer_line = init_signal_transfer_line(bpm.fourier_frequencies)
     bpm.transmission_coefs = signal_transfer_line.transmission_coefs
-    # bpm.perform_signal_reconstruction()
+    bpm.perform_signal_reconstruction()
     return bpm, signal_transfer_line
