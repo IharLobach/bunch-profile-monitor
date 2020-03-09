@@ -278,10 +278,10 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
-        update_successful_WCM = bpm.update_data(testing=use_test_data)
+        update_successful_WCM = bpm.update_data()
         if not update_successful_WCM:
             raise Exception("Couldn't update WCM signal")
-        update_successful_RF = rf.update_data(testing=use_test_data)
+        update_successful_RF = rf.update_data()
         if not update_successful_RF:
             raise Exception("Couldn't update RF probe signal")
         bpm.perform_fft()
