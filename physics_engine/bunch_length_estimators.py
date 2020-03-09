@@ -151,10 +151,11 @@ def calc_ramsg_currentg(reconstructed_signal, time_arr, left_lim, right_lim,
                                   bounds=([2*A0, t1, 0], [0, t2, 2*fwhm]))
     Af, muf, sigmaf = coeff
     sigmaf = np.absolute(sigmaf)
+    dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
     plot_data = None
     if fit_points:
         x_data = np.linspace(time_arr_within_lims[0], time_arr_within_lims[-1],
                              fit_points)
         y_data = average_level+gauss(x_data, Af, muf, sigmaf)
         plot_data = (x_data, y_data)
-    return sigmaf, Af*np.sqrt(2*np.pi)*sigmaf, plot_data
+    return 30*sigmaf, current_calibration_coef*Af*np.sqrt(2*np.pi)*sigmaf/dt, plot_data

@@ -79,9 +79,9 @@ rms_calculation_max_text = TextInput(
 table_source = ColumnDataSource()
 
 columns = [
-        TableColumn(field="acnet_name", title="ACNET device"),
+        TableColumn(field="acnet_name", title="ACNET device", width=120),
         TableColumn(field="quantities", title="Quantity"),
-        TableColumn(field="values", title="Value"),
+        TableColumn(field="values", title="Value", width=70),
     ]
 data_table = DataTable(source=table_source, columns=columns,
                        width=300, height=280, index_position=None)
