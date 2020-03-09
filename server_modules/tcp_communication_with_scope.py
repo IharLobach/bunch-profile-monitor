@@ -3,6 +3,7 @@ import re
 import numpy as np
 from server_modules.config_requests import get_from_config
 import time
+import pandas as pd
 
 
 class ConnectionToScope():

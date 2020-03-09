@@ -39,7 +39,7 @@ dt = get_from_config("dt_ns")
 use_test_data = get_from_config("use_test_data")
 conn = ConnectionToScope(get_from_config("desired_waveform_length_ns"),
                          dt, use_test_data)
-bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)
+bpm, signal_transfer_line = init_bpm_signal_transfer_line(conn)
 rf = RFProbe(
     get_from_config("probe_to_RF_coef"),
     iota_freq_MHz,  # IOTA freq MHz
