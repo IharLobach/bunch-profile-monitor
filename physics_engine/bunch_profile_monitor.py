@@ -77,6 +77,7 @@ class BunchProfileMonitor:
         return self.reconstructed_signal
 
 
+# legacy code
 class TestDataGenerator():
     def __init__(self, cable, dt=0.2, revolution_period=1/0.0075, n_per=10):
         self.cable = cable

@@ -20,8 +20,15 @@ class ConnectionToScope():
     quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
  
-    def __init__(self, desired_waveform_length_ns, dt_ns):
+    def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
+        self.testing = testing
         self.desired_waveform_length_idx = desired_waveform_length_ns // dt_ns
+    
+    def wf_length(self, f):
+        def wrapper(*args, **kwargs):
+            v_arr = f(*args, **kwargs)
+            return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
+        return wrapper
 
     def get_waveform_generic(self, quiery):
         allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -49,11 +56,24 @@ class ConnectionToScope():
             received3 = bytes(received2).strip()
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
-            return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
+            return v_arr
 
+    def get_waveform_testing(self):
+        v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
+                                              "bunch-profile-monitor",
+                                              "signal_transfer_line_data",
+                                              "v_arr_test.csv"), header=None)
+        v_arr = v_arr_data.values.transpose()[0]
+        # random additive here
+        v_arr = np.asarray(v_arr)+np.random.uniform(-0.005, 0.005, len(v_arr))
+        self.v_arr = v_arr
+        return self.v_arr
+
+    @self.wf_length
     def get_waveform(self):
         return self.get_waveform_generic(self.quiery_waveform_WCM)
 
+    @self.wf_length
     def get_waveform_RF(self):
         return self.get_waveform_generic(self.quiery_waveform_RF_probe)
 
