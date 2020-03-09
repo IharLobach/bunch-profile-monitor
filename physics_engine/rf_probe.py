@@ -37,12 +37,9 @@ class RFProbe():
             + np.random.uniform(-0.005, 0.005, len(self.v_arr))
         return self.v_arr
 
-    def update_data(self, testing=False):
+    def update_data(self):
         """returns True if updated successfully, False otherwise"""
-        if testing:
-            self.__update_data_testing()
-            return True
-        elif self.connection_to_scope is None:
+        if self.connection_to_scope is None:
             raise TypeError("connection_to_scope is None")
         else:
             try:

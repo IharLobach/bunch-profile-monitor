@@ -24,11 +24,8 @@ class ConnectionToScope():
         self.testing = testing
         self.desired_waveform_length_idx = desired_waveform_length_ns // dt_ns
     
-    def wf_length(self, f):
-        def wrapper(*args, **kwargs):
-            v_arr = f(*args, **kwargs)
-            return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
-        return wrapper
+    def wf_length(self, v_arr):
+        return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
 
     def get_waveform_generic(self, quiery):
         allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -70,10 +67,30 @@ class ConnectionToScope():
         return self.v_arr
 
     def get_waveform(self):
-        return self.get_waveform_generic(self.quiery_waveform_WCM)
+        if self.testing:
+            res = self.get_waveform_testing()
+        else:
+            res = self.get_waveform_generic(self.quiery_waveform_WCM)
+        return self.wf_length(res)
+
+    def get_waveform_RF_testing(self):
+        v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
+                                              "bunch-profile-monitor",
+                                              "signal_transfer_line_data",
+                                              "v_arr_test.csv"), header=None)
+        self.v_arr = v_arr_data.values.transpose()[0]
+        # random additive here
+        time_arr = self.time_arr
+        self.v_arr = np.sin(2*np.pi*4/133*time_arr)\
+            + np.random.uniform(-0.005, 0.005, len(self.v_arr))
+        return self.v_arr
 
     def get_waveform_RF(self):
-        return self.get_waveform_generic(self.quiery_waveform_RF_probe)
+        if self.testing:
+            res = self.get_waveform_RF_testing()
+        else:
+            res = self.get_waveform_generic(self.quiery_waveform_RF_probe)
+        return self.wf_length(res)
 
     def get_volt_div(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

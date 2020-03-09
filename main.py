@@ -38,7 +38,8 @@ dt = get_from_config("dt_ns")
 
 use_test_data = get_from_config("use_test_data")
 if not use_test_data:
-    conn = ConnectionToScope(get_from_config("desired_waveform_length_ns"), dt)
+    conn = ConnectionToScope(get_from_config("desired_waveform_length_ns"),
+                             dt, use_test_data)
 else:
     conn = None
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(use_test_data, conn)

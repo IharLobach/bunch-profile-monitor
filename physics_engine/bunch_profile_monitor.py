@@ -39,30 +39,16 @@ class BunchProfileMonitor:
     def time_arr(self):
         return np.arange(0, self.data_len*self.dt, self.dt)
 
-    def __update_data_testing(self):
-        v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
-                                              "bunch-profile-monitor",
-                                              "signal_transfer_line_data",
-                                              "v_arr_test.csv"), header=None)
-        v_arr = v_arr_data.values.transpose()[0]
-        # random additive here
-        v_arr = np.asarray(v_arr)+np.random.uniform(-0.005, 0.005, len(v_arr))
-        self.v_arr = v_arr
-        return self.v_arr
-
-    def update_data(self, testing=False):
+    def update_data(self):
         """returns True if updated successfully, False otherwise"""
-        if testing:
-            self.__update_data_testing()
-            return True
-        elif self.connection_to_scope is None:
+        if self.connection_to_scope is None:
             raise TypeError("connection_to_scope is None")
         else:
             try:
                 self.v_arr = self.connection_to_scope.get_waveform()
                 return True
             except Exception as e:
-                print("Exception in update data for WCM", e)
+                print("Exception in update data for RF probe", e)
                 return False
 
     def perform_fft(self):
