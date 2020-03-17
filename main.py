@@ -295,6 +295,7 @@ def try_update_plot():
         if min(original_signal) > -low_signal_limit:
             fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
                  = fur = mad = rmsg = currentg = "nan"
+            gaussian_fit_line_source.data = dict(x=[], y=[])
         else:
             fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
