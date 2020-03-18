@@ -381,7 +381,7 @@ def try_update_plot():
                 mad, rmsg, currentg]
         vals_formatted = [length_output(v) for v in vals]
         table_data = dict(
-            acnet_name=["N:IWCMBF", "N:WCMBR", "N:IWCMBP",
+            acnet_name=["N:IWCMBF", "N:IWCMBR", "N:IWCMBP",
                         "N:IWCMI", "N:IRFEPA", "N:IRFEPP", "N:IWCMBE",
                         "N:IWCMBM", "N:IWCMBG", "N:IWCMIG"],
             quantities=["FWHM length, cm", "RMS length, cm",
