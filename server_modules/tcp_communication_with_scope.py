@@ -213,7 +213,7 @@ class ConnectionToScope():
             received = b''
             while True:
                 received += sock.recv(4096)
-                if received[-2:] == b'V\n':
+                if received[-2:] == b'SWEEP\n':
                     break
             res = int(re.split(b' ', re.split(b',', received)[-1])[0].decode())
             return res
