@@ -139,7 +139,7 @@ def calc_ramsg_currentg(reconstructed_signal, time_arr, left_lim, right_lim,
     mu0 = t_min
     sigma0 = fwhm/2.3551
     p0 = (A0, mu0, sigma0)
-  
+
     def gauss(t, *p):
         A, mu, sigma = p
         return A*np.exp(-(t-mu)**2/(2.*sigma**2))
@@ -158,4 +158,5 @@ def calc_ramsg_currentg(reconstructed_signal, time_arr, left_lim, right_lim,
                              fit_points)
         y_data = average_level+gauss(x_data, Af, muf, sigmaf)
         plot_data = (x_data, y_data)
-    return 30*sigmaf, current_calibration_coef*Af*np.sqrt(2*np.pi)*sigmaf/dt, plot_data
+    return 30*sigmaf, current_calibration_coef*Af*np.sqrt(2*np.pi)*sigmaf/dt,\
+        plot_data

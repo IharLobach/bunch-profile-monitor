@@ -21,13 +21,15 @@ class ConnectionToScope():
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0e C3:VOLT_DIV?\n'
     quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
- 
+    command_panel_setup = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
+        b' LO\n\x81\x01\x00\x00\x00\x00\x00\x08 *RCL 4\n'
+
     def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
         self.dt = dt_ns
         self.testing = testing
         self.desired_waveform_length_idx =\
             int(desired_waveform_length_ns // dt_ns)
-    
+
     def wf_length(self, v_arr):
         return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
 
@@ -164,6 +166,18 @@ class ConnectionToScope():
                 '{}'.format(offset).encode()+b' V\n'
             # print(command_offset)
             sock.sendall(command_offset)
+            time.sleep(0.25)
+
+    def set_panel_settings(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(self.timeout)
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except Exception as e:
+                    pass  # print(e)
+            sock.sendall(self.command_panel_setup)
             time.sleep(0.25)
 
 

@@ -54,15 +54,22 @@ dlc_thread.start()
 
 acnet_logger = data_logging.ACNET_logger(get_from_config("clx_ip"), 5005)
 
+button_reset_scope_settings = Toggle(
+    label="Reset oscilloscope settings",
+    button_type="danger",
+    width=300,
+    active=False)
+
 saved_files_folder_text = TextInput(
     title="Files are saved to the following folder",
     value="bunch_profile_meas_{}".format(datetime.datetime.now()
                                          .strftime("%m-%d-%Y")),
     width=300)
-button_save_full_plot_data = Button(
-    label="Save full plot data",
-    button_type="success",
-    width=300)
+
+button_save_full_plot_data = Toggle(label="Save full plot data",
+                                    button_type="success",
+                                    width=300,
+                                    active=False)
 
 div_rms = Div(text="Calculation limits (ns) for RMS length and Current:",
               width=300)
@@ -98,9 +105,6 @@ def button_save_full_plot_data_callback(event):
             "reconstructed_signal": reconstructed_line_source.data['y']
         }, saved_files_folder_text.value)
 
-
-button_save_full_plot_data.on_event(ButtonClick,
-                                    button_save_full_plot_data_callback)
 
 div = Div(text="Oscilloscope's vertical scale:", width=300)
 
@@ -262,7 +266,8 @@ for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
 
 # Set up layouts and add to document
 rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
-inputs = column(saved_files_folder_text, button_save_full_plot_data,
+inputs = column(button_reset_scope_settings, saved_files_folder_text,
+                button_save_full_plot_data,
                 div_rms, options_rms,
                 rms_calc_row, data_table, cutoff_slider, div, options_vert,
                 row(toggle_decrease, toggle_increase), phase_const_slider)
@@ -377,6 +382,9 @@ def try_update_plot():
             if toggle_decrease.active:
                 button_decrease_callback(1)
                 toggle_decrease.active = False
+        if button_save_full_plot_data.active:
+            button_save_full_plot_data_callback(1)
+            button_save_full_plot_data.active = False
     except Exception as e:
         print("Exception happened in try_update_plot:", e)
 
