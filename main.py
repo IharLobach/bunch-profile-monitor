@@ -60,6 +60,11 @@ button_reset_scope_settings = Toggle(
     width=300,
     active=False)
 
+
+def button_reset_scope_settings_callback(event):
+    conn.set_panel_settings()
+
+
 saved_files_folder_text = TextInput(
     title="Files are saved to the following folder",
     value="bunch_profile_meas_{}".format(datetime.datetime.now()
@@ -284,6 +289,9 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
+        if button_reset_scope_settings.active:
+            button_reset_scope_settings_callback(1)
+            button_reset_scope_settings.active = False
         update_successful_WCM = bpm.update_data()
         if not update_successful_WCM:
             raise Exception("Couldn't update WCM signal")
