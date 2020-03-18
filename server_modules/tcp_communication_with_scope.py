@@ -196,7 +196,7 @@ class ConnectionToScope():
             command_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
                 b' LO\n\x81\x01\x00\x00\x00\x00\x00< F1:DEF EQN,AVG(C3)'\
                 b',AVERAGETYPE,CONTINUOUS,SWEEPS,'\
-                + '{}'.format(sweeps).encode()+b' SWEEP\n'
+                + str(sweeps).encode()+b' SWEEP\n'
             sock.sendall(command_sweeps)
             time.sleep(0.25)
 

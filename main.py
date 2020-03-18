@@ -58,7 +58,7 @@ button_reset_scope_settings = Toggle(
     label="Reset oscilloscope settings",
     button_type="danger",
     width=300,
-    active=False)
+    active=True)
 
 
 def button_reset_scope_settings_callback(event):
@@ -268,7 +268,7 @@ else:
     sweeps = conn.get_sweeps()
 
 sweeps_text = TextInput(
-    value=length_output(sweeps), width=145)
+    value=str(sweeps), width=145)
 
 
 def inputs_callback(attrname, old, new):
@@ -314,6 +314,8 @@ def try_update_plot():
             toggle_set_sweeps.active = False
         if button_reset_scope_settings.active:
             button_reset_scope_settings_callback(1)
+            new_sweeps = conn.get_sweeps()
+            sweeps_text.value = str(new_sweeps)
             update_vertical_span()
             button_reset_scope_settings.active = False
         update_successful_WCM = bpm.update_data()
