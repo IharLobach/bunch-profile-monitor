@@ -17,5 +17,6 @@
     "rms_window_size":2.5,
     "current_calibration_coef":0.425,
     "probe_to_RF_coef":7250,
-    "bunch_phase_const_deg":163
+    "bunch_phase_const_deg":163,
+    "sweeps":100
 }

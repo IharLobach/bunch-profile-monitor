@@ -255,6 +255,22 @@ phase_const_slider = Slider(
     title="Bunch phase constant")
 
 
+toggle_set_sweeps = Toggle(label="Set sweeps", button_type="success",
+                           width=145,
+                           active=False)
+
+div_sweeps = Div(text="Averaging on the oscilloscope:",
+                 width=300)
+
+if use_test_data:
+    sweeps = get_from_config("sweeps")
+else:
+    sweeps = conn.get_sweeps()
+
+sweeps_text = TextInput(
+    value=length_output(sweeps), width=145)
+
+
 def inputs_callback(attrname, old, new):
     if not options_rms.active:
         rms_calc_left = float(rms_calculation_min_text.value)
@@ -275,7 +291,9 @@ inputs = column(button_reset_scope_settings, saved_files_folder_text,
                 button_save_full_plot_data,
                 div_rms, options_rms,
                 rms_calc_row, data_table, cutoff_slider, div, options_vert,
-                row(toggle_decrease, toggle_increase), phase_const_slider)
+                row(toggle_decrease, toggle_increase), phase_const_slider,
+                div_sweeps,
+                row(toggle_set_sweeps, sweeps_text))
 
 
 curdoc().add_root(row(inputs, plot))
@@ -289,6 +307,11 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
+        if toggle_set_sweeps.active:
+            conn.set_sweeps(int(sweeps_text.value))
+            new_sweeps = conn.get_sweeps()
+            sweeps_text.value = str(new_sweeps)
+            toggle_set_sweeps.active = False
         if button_reset_scope_settings.active:
             button_reset_scope_settings_callback(1)
             update_vertical_span()

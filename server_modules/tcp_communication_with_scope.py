@@ -14,7 +14,7 @@ class ConnectionToScope():
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
                 b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?\n"
     quiery_waveform_WCM = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE\n"
+        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 F1:INSPECT? SIMPLE\n"
     quiery_waveform_RF_probe = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
         b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C2:INSPECT? SIMPLE\n"
     quiery_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
@@ -23,6 +23,8 @@ class ConnectionToScope():
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
     command_panel_setup = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x08 *RCL 4\n'
+    quiery_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
+        b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c F1:DEFine?\n'
 
     def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
         self.dt = dt_ns
@@ -179,6 +181,42 @@ class ConnectionToScope():
                     pass  # print(e)
             sock.sendall(self.command_panel_setup)
             time.sleep(0.25)
+
+    def set_sweeps(self, sweeps):
+        if not isinstance(sweeps, int):
+            raise TypeError("sweeps has to be an integer")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(self.timeout)
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except Exception as e:
+                    pass  # print(e)
+            command_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
+                b' LO\n\x81\x01\x00\x00\x00\x00\x00< F1:DEF EQN,AVG(C3)'\
+                b',AVERAGETYPE,CONTINUOUS,SWEEPS,'\
+                + '{}'.format(sweeps).encode()+b' SWEEP\n'
+            sock.sendall(command_sweeps)
+            time.sleep(0.25)
+
+    def get_sweeps(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(self.timeout)
+            while True:
+                try:
+                    sock.connect((self.HOST, self.PORT))
+                    break
+                except Exception as e:
+                    pass #  print(e)
+            sock.sendall(self.quiery_sweeps)
+            received = b''
+            while True:
+                received += sock.recv(4096)
+                if received[-2:] == b'V\n':
+                    break
+            res = int(re.split(b' ', re.split(b',', received)[-1])[0].decode())
+            return res
 
 
 if __name__ == "__main__":
