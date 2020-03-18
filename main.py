@@ -291,6 +291,7 @@ def try_update_plot():
     try:
         if button_reset_scope_settings.active:
             button_reset_scope_settings_callback(1)
+            update_vertical_span()
             button_reset_scope_settings.active = False
         update_successful_WCM = bpm.update_data()
         if not update_successful_WCM:
