@@ -21,6 +21,8 @@ A new tab should open in a browser window on the raspberry pi, and you will be a
 
 ![Demo](demo.gif)
 
+The script `clx_udp_server_for_acnet.py` should be run on the linux cluster on the node clx60 for the values to be updated in ACNET. 
+
 ## Running the server locally with synthetic data
 Replace the last 4 lines by
 ```
