@@ -8,14 +8,26 @@ Tested on Ubuntu 18.04 LTS and Raspbian 10 (buster):
 ```
 $ sudo apt install python3
 $ sudo apt install python3-pip
-$ pip3 install pandas matplotlib bokeh flask sqlite3
+$ pip3 install numpy scipy pandas matplotlib bokeh flask sqlite3
 $ git clone https://github.com/IharLobach/bunch-profile-monitor.git
+$ cd bunch-profile-monitor
+$ mv config_raspberry_pi.json config.json
+$ cd ..
+$ python3 -m bokeh serve --address 0.0.0.0 --port 8080 --allow-websocket-origin 131.225.118.138:8080 --allow-websocket-origin lobach-esb-pi3:8080 --allow-websocket-origin localhost:8080  bunch-profile-monitor
+```
+A new tab should open in a browser window on the raspberry pi, and you will be able to open it anywhere else on the controls network by going to http://lobach-esb-pi3.fnal.gov:5000
+
+131.225.118.138 is the raspberry pi's IP address, reaplace it accordingly, if you use a new raspberry pi.
+
+![Demo](demo.gif)
+
+## Running the server locally with synthetic data
+Replace the last 4 lines by
+```
 $ cd bunch-profile-monitor
 $ mv config_localhost.json config.json
 $ cd ..
 $ python3 -m bokeh serve bunch-profile-monitor
 ```
-A new tab should open in a browser window.
 
-![Demo](demo.gif)
-
+Note that most of the buttons will cause errors in the program with synthetic data, because there is not connection to the oscilloscope in this configuration.

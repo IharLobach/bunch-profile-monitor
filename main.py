@@ -58,7 +58,7 @@ button_reset_scope_settings = Toggle(
     label="Reset oscilloscope settings",
     button_type="danger",
     width=300,
-    active=True)
+    active=False if use_test_data else True)
 
 
 def button_reset_scope_settings_callback(event):
