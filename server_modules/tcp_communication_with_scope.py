@@ -5,6 +5,7 @@ from server_modules.config_requests import get_from_config
 import time
 import pandas as pd
 import os
+import time
 
 
 class ConnectionToScope():
@@ -30,10 +31,9 @@ class ConnectionToScope():
         self.dt = dt_ns
         self.testing = testing
 
-    def wf_length(self, v_arr):
-        return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
 
     def get_waveform_generic(self, quiery):
+        t0 = time.time()
         allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                            '.', 'e', '+', '-', ' ')
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -59,6 +59,8 @@ class ConnectionToScope():
             received3 = bytes(received2).strip()
             numbers = re.split(b'\s{1,2}', received3)
             v_arr = np.asarray([float(v) for v in numbers])
+            t1 = time.time()
+            print("Time to get data = ", t1-t0)
             return v_arr
 
     def get_waveform_testing(self):
