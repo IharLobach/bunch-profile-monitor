@@ -33,16 +33,14 @@ from server_modules.data_logging import data_logger_cleaner
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 from physics_engine.rf_probe import RFProbe
 
-iota_freq_MHz = 7.5
+iota_freq_MHz = get_from_config("iota_rf_freq_MHz")
 dt = get_from_config("dt_ns")
 
 use_test_data = get_from_config("use_test_data")
-conn = ConnectionToScope(get_from_config("desired_waveform_length_ns"),
-                         dt, use_test_data)
+conn = ConnectionToScope(dt, use_test_data)
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(conn)
 rf = RFProbe(
     get_from_config("probe_to_RF_coef"),
-    iota_freq_MHz,  # IOTA freq MHz
     conn,
     dt)
 
@@ -254,21 +252,16 @@ phase_const_slider = Slider(
     step=0.1,
     title="Bunch phase constant")
 
+time_bin_slider = Slider(
+    start=0.01,
+    end=0.2,
+    value=0.05,
+    step=0.01,
+    title="Plot time bin, ns")
 
-toggle_set_sweeps = Toggle(label="Set sweeps", button_type="success",
-                           width=145,
-                           active=False)
 
-div_sweeps = Div(text="Averaging on the oscilloscope:",
-                 width=300)
 
-if use_test_data:
-    sweeps = get_from_config("sweeps")
-else:
-    sweeps = conn.get_sweeps()
 
-sweeps_text = TextInput(
-    value=str(sweeps), width=145)
 
 
 def inputs_callback(attrname, old, new):
@@ -290,10 +283,9 @@ rms_calc_row = row(rms_calculation_min_text, rms_calculation_max_text)
 inputs = column(button_reset_scope_settings, saved_files_folder_text,
                 button_save_full_plot_data,
                 div_rms, options_rms,
-                rms_calc_row, data_table, cutoff_slider, div, options_vert,
+                rms_calc_row, data_table, time_bin_slider, cutoff_slider, div, options_vert,
                 row(toggle_decrease, toggle_increase), phase_const_slider,
-                div_sweeps,
-                row(toggle_set_sweeps, sweeps_text))
+                )
 
 
 curdoc().add_root(row(inputs, plot))
@@ -305,17 +297,15 @@ mbl = get_from_config("max_bunch_length_ns")
 rms_window = get_from_config("rms_window_size")
 
 
+
 def try_update_plot():
     try:
-        if toggle_set_sweeps.active:
-            conn.set_sweeps(int(sweeps_text.value))
-            new_sweeps = conn.get_sweeps()
-            sweeps_text.value = str(new_sweeps)
-            toggle_set_sweeps.active = False
+        plot_dt = float(time_bin_slider.value)  # ns
+        one_per_ns = 1/(iota_freq_MHz/1000)
+        npts = int(one_per_ns/plot_dt)
+        period_time_base = plot_dt*np.arange(npts)
         if button_reset_scope_settings.active:
             button_reset_scope_settings_callback(1)
-            new_sweeps = conn.get_sweeps()
-            sweeps_text.value = str(new_sweeps)
             update_vertical_span()
             button_reset_scope_settings.active = False
         update_successful_WCM = bpm.update_data()
@@ -324,19 +314,32 @@ def try_update_plot():
         update_successful_RF = rf.update_data()
         if not update_successful_RF:
             raise Exception("Couldn't update RF probe signal")
+        rf_ampl, rf_phase, Tiota = rf.get_amplitude_and_phase()
         bpm.perform_fft()
         bpm.perform_signal_reconstruction()
-        reconstructed_signal = bpm.reconstructed_signal
-        original_signal = bpm.v_arr
+        times_in_one_period = bpm.time_arr % Tiota
+        rec = bpm.reconstructed_signal
+        ori = bpm.v_arr
+        times = (times_in_one_period/plot_dt).astype(int)
+        df = pd.DataFrame({
+            "time": times, "rec": rec, "ori": ori})
+        df = df.groupby("time").mean()
+        df = df[df.index < len(period_time_base)]
+
+        # these two are for plotting purposes
+        reconstructed_signal = np.zeros(shape=period_time_base.shape)
+        original_signal = np.zeros(shape=period_time_base.shape)
+        reconstructed_signal[df.index.values] = df['rec']
+        original_signal[df.index.values] = df['ori']
         i_min = np.argmin(reconstructed_signal)
         m = reconstructed_signal[i_min]
-        t_min = bpm.time_arr[i_min]
+        t_min = period_time_base[i_min]
         if min(original_signal) > -low_signal_limit:
             fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
                  = fur = mad = rmsg = currentg = "nan"
             gaussian_fit_line_source.data = dict(x=[], y=[])
         else:
-            fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
+            fwhm = calc_fwhm(reconstructed_signal, period_time_base,
                              t_min-mbl, t_min+mbl)
             if options_rms.active and (fwhm != 'nan'):
                 rms_left_lim = t_min-rms_window*fwhm/30
@@ -345,28 +348,27 @@ def try_update_plot():
                 rms_calc_right_span.location = rms_right_lim
                 rms_calculation_min_text.value = length_output(rms_left_lim)
                 rms_calculation_max_text.value = length_output(rms_right_lim)
-            rms = calc_rms(reconstructed_signal, bpm.time_arr,
+            rms = calc_rms(rec, times_in_one_period,
                            rms_calc_left_span.location,
                            rms_calc_right_span.location)
-            rf_ampl, rf_phase = rf.get_amplitude_and_phase()
             phase_angle =\
-                calc_phase_angle(reconstructed_signal, bpm.time_arr,
+                calc_phase_angle(rec, times_in_one_period,
                                  rms_calc_left_span.location,
                                  rms_calc_right_span.location,
                                  iota_freq_MHz)\
                 - rf_phase-phase_const_slider.value
-            current = calc_current(reconstructed_signal, bpm.time_arr,
+            current = calc_current(rec, times_in_one_period,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
-            fur = calc_fur_length(reconstructed_signal, bpm.time_arr,
+            fur = calc_fur_length(rec, times_in_one_period,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-            mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
+            mad = calc_mad_length(rec, times_in_one_period,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
             try:
                 rmsg, currentg, gauss_plot_data = \
-                    calc_ramsg_currentg(reconstructed_signal, bpm.time_arr,
+                    calc_ramsg_currentg(reconstructed_signal, period_time_base,
                                         rms_calc_left_span.location,
                                         rms_calc_right_span.location,
                                         fwhm, 1000)
@@ -397,10 +399,10 @@ def try_update_plot():
                                 cutoff_slider.value])
         acnet_logger.send_to_ACNET(vals)
         reconstructed_line_source.data =\
-            dict(x=bpm.time_arr[:len(reconstructed_signal)],
+            dict(x=period_time_base,
                  y=reconstructed_signal)
         oscilloscope_line_source.data =\
-            dict(x=bpm.time_arr[:len(original_signal)],
+            dict(x=period_time_base,
                  y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if options_vert.active:

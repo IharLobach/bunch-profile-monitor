@@ -14,7 +14,7 @@ class ConnectionToScope():
     quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
                 b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?\n"
     quiery_waveform_WCM = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 F1:INSPECT? SIMPLE\n"
+        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE\n"
     quiery_waveform_RF_probe = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
         b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C2:INSPECT? SIMPLE\n"
     quiery_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
@@ -26,11 +26,9 @@ class ConnectionToScope():
     quiery_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c F1:DEFine?\n'
 
-    def __init__(self, desired_waveform_length_ns, dt_ns, testing=False):
+    def __init__(self, dt_ns, testing=False):
         self.dt = dt_ns
         self.testing = testing
-        self.desired_waveform_length_idx =\
-            int(desired_waveform_length_ns // dt_ns)
 
     def wf_length(self, v_arr):
         return v_arr[:min(len(v_arr), self.desired_waveform_length_idx)]
@@ -79,17 +77,15 @@ class ConnectionToScope():
             res = self.get_waveform_testing()
         else:
             res = self.get_waveform_generic(self.quiery_waveform_WCM)
-        return self.wf_length(res)
+        return res
 
     def get_waveform_RF_testing(self):
         v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
                                               "bunch-profile-monitor",
                                               "signal_transfer_line_data",
-                                              "v_arr_test.csv"), header=None)
-        self.v_arr = v_arr_data.values.transpose()[0]
-        # random additive here
-        time_arr = np.arange(len(self.v_arr))*self.dt
-        self.v_arr = np.sin(2*np.pi*4/133*time_arr)\
+                                              "v_rf_arr_test.csv"),
+                                 header=None)
+        self.v_arr = v_arr_data.loc[:, 0].values\
             + np.random.uniform(-0.005, 0.005, len(self.v_arr))
         return self.v_arr
 
@@ -98,7 +94,7 @@ class ConnectionToScope():
             res = self.get_waveform_RF_testing()
         else:
             res = self.get_waveform_generic(self.quiery_waveform_RF_probe)
-        return self.wf_length(res)
+        return res
 
     def get_volt_div(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

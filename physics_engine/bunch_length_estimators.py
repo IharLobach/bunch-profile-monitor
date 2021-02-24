@@ -2,6 +2,7 @@ import numpy as np
 from server_modules.config_requests import get_from_config
 from scipy.optimize import curve_fit
 current_calibration_coef = get_from_config("current_calibration_coef")
+noise_range = get_from_config("range_noise_level_calculation_ns")
 
 
 class ErrorFWHMTooManyIntersections(Exception):
@@ -9,8 +10,10 @@ class ErrorFWHMTooManyIntersections(Exception):
 
 
 def calc_average_level(reconstructed_signal, time_arr, left_lim, right_lim):
-    left = reconstructed_signal[time_arr < left_lim]
-    right = reconstructed_signal[time_arr > right_lim]
+    left = reconstructed_signal[
+        (time_arr < left_lim) & (time_arr > left_lim - noise_range)]
+    right = reconstructed_signal[
+        (time_arr > right_lim) & (time_arr < right_lim + noise_range)]
     both_sides = np.concatenate([left, right])
     return np.mean(both_sides)
 
@@ -99,7 +102,8 @@ def calc_current(reconstructed_signal, time_arr, left_lim, right_lim):
     y = reconstructed_signal-average_level
     time_arr_within_lims, y_within_lims = \
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
-    return -current_calibration_coef*(-sum(y_within_lims))
+    return -current_calibration_coef/0.1*(right_lim-left_lim) \
+        * (-np.mean(y_within_lims))
 
 
 @nan_support
@@ -109,8 +113,9 @@ def calc_fur_length(reconstructed_signal, time_arr, left_lim, right_lim):
     y = reconstructed_signal-average_level
     time_arr_within_lims, y_within_lims = \
         get_signal_within_lims(y, time_arr, left_lim, right_lim)
-    dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
-    return 30*dt/2/np.sqrt(np.pi)*(-sum(y_within_lims))**2/sum(y_within_lims**2)
+    return 30*(right_lim-left_lim)/2/np.sqrt(np.pi)\
+        * (np.mean(y_within_lims)*np.sum(y_within_lims))\
+        / np.sum(y_within_lims**2)
 
 
 @nan_support
@@ -151,12 +156,11 @@ def calc_ramsg_currentg(reconstructed_signal, time_arr, left_lim, right_lim,
                                   bounds=([2*A0, t1, 0], [0, t2, 2*fwhm]))
     Af, muf, sigmaf = coeff
     sigmaf = np.absolute(sigmaf)
-    dt = (time_arr[-1]-time_arr[0])/(len(time_arr)-1)
     plot_data = None
     if fit_points:
         x_data = np.linspace(time_arr_within_lims[0], time_arr_within_lims[-1],
                              fit_points)
         y_data = average_level+gauss(x_data, Af, muf, sigmaf)
         plot_data = (x_data, y_data)
-    return 30*sigmaf, current_calibration_coef*Af*np.sqrt(2*np.pi)*sigmaf/dt,\
+    return 30*sigmaf, current_calibration_coef/0.1*Af*np.sqrt(2*np.pi)*sigmaf,\
         plot_data

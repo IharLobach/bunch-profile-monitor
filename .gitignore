@@ -3,3 +3,5 @@
 log.db
 config.json
 env/
+signal_transfer_line_data/v_arr_test.csv
+signal_transfer_line_data/v_rf_arr_test.csv

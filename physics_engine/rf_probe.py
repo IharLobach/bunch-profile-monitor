@@ -2,17 +2,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from physics_engine.finding_period import get_period
+from server_modules.config_requests import get_from_config
+
+iota_freq_MHz = get_from_config("iota_rf_freq_MHz")
+h = get_from_config("iota_rf_harmonic")
+
+
+def sin_fit(x, a, b, frf):
+    return a*np.cos(frf*x)+b*np.sin(frf*x)
 
 
 class RFProbe():
-    def __init__(self, probe_to_RF_coef, iota_freq_MHz=7.5,
+    def __init__(self, probe_to_RF_coef,
                  connection_to_scope=None, dt=None):
         """dt in units of ns"""
         self.connection_to_scope = connection_to_scope
         self.dt = dt
         self.v_arr = None
         self.probe_to_RF_coef = probe_to_RF_coef
-        self.rf_freq_GHz = 2*np.pi*4*iota_freq_MHz/1000
+        self.rf_freq_GHz = 2*np.pi*h*iota_freq_MHz/1000
     
     @property
     def data_len(self):
@@ -24,18 +33,6 @@ class RFProbe():
     @property
     def time_arr(self):
         return np.arange(0, self.data_len*self.dt, self.dt)
-
-    def __update_data_testing(self):
-        v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
-                                              "bunch-profile-monitor",
-                                              "signal_transfer_line_data",
-                                              "v_arr_test.csv"), header=None)
-        self.v_arr = v_arr_data.values.transpose()[0]
-        # random additive here
-        time_arr = self.time_arr
-        self.v_arr = np.sin(2*np.pi*4/133*time_arr)\
-            + np.random.uniform(-0.005, 0.005, len(self.v_arr))
-        return self.v_arr
 
     def update_data(self):
         """returns True if updated successfully, False otherwise"""
@@ -54,11 +51,19 @@ class RFProbe():
         return self.probe_to_RF_coef*self.v_arr
 
     def get_amplitude_and_phase(self):
-        cos = np.cos(self.rf_freq_GHz*self.time_arr)
-        sin = np.sin(self.rf_freq_GHz*self.time_arr)
+        df0 = pd.DataFrame({'time': self.time_arr,
+                            'vol': self.rf_voltage_arr})
+        Tiota0 = 2*np.pi*h/self.rf_freq_GHz
+        df0 = df0[df0['time'] < Tiota0]
+        cos = np.cos(self.rf_freq_GHz*df0['time'])
+        sin = np.sin(self.rf_freq_GHz*df0['time'])
         A = np.vstack([cos, sin]).T
-        a, b = np.linalg.lstsq(A, self.rf_voltage_arr, rcond=None)[0]
+        a, b = np.linalg.lstsq(A, df0['vol'], rcond=None)[0]
         c_ampl = a+1j*b
         phase = np.angle(c_ampl, deg=True)
         ampl = np.absolute(c_ampl)
-        return ampl, phase
+        Tiota = h * get_period(self.rf_voltage_arr,
+                           self.dt, filter_window_length=11)
+        return ampl, phase, Tiota
+
+
