@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.signal
-from sklearn import linear_model
 import matplotlib.pyplot as plt
 
 
@@ -32,12 +31,10 @@ def get_absolute_trig_level_from_relative(signal, relative_trigger_level=0.5):
 
 def get_period_from_trig_times(trig_times):
     """returns period in units of sampling time of the argument trig_times"""
-    reg = linear_model.LinearRegression()
     x = np.arange(len(trig_times))
     y = trig_times
-    reg.fit(x.reshape((len(x), 1)), y)
-    a = reg.coef_[0]
-    b = reg.intercept_
+    A = np.vstack([x, np.ones(len(x))]).T
+    a, b = np.linalg.lstsq(A, y, rcond=None)[0]
     return a
 
 
