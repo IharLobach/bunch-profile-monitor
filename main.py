@@ -8,7 +8,7 @@ from bokeh.models import \
 from bokeh.plotting import figure
 from bokeh.events import ButtonClick
 from bokeh.models import DataTable, DateFormatter, TableColumn, Span, Range1d
-
+import time
 
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 import datetime
@@ -317,8 +317,11 @@ def try_update_plot():
         if not update_successful_RF:
             raise Exception("Couldn't update RF probe signal")
         rf_ampl, rf_phase, Tiota = rf.get_amplitude_and_phase()
+        t0 = time.time()
         bpm.perform_fft()
         bpm.perform_signal_reconstruction()
+        t1 = time.time()
+        print("time for fft = ", t1-t0)
         times_in_one_period = bpm.time_arr % Tiota
         rec = bpm.reconstructed_signal
         ori = bpm.v_arr

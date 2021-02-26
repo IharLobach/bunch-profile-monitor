@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from physics_engine.finding_period import get_period
 from server_modules.config_requests import get_from_config
+import time
 
 iota_freq_MHz = get_from_config("iota_rf_freq_MHz")
 h = get_from_config("iota_rf_harmonic")
@@ -51,6 +52,7 @@ class RFProbe():
         return self.probe_to_RF_coef*self.v_arr
 
     def get_amplitude_and_phase(self):
+        t0 = time.time()
         df0 = pd.DataFrame({'time': self.time_arr,
                             'vol': self.rf_voltage_arr})
         Tiota0 = 2*np.pi*h/self.rf_freq_GHz
@@ -64,6 +66,8 @@ class RFProbe():
         ampl = np.absolute(c_ampl)
         Tiota = h * get_period(self.rf_voltage_arr, self.dt)
         # print("Tiota = ", Tiota)
+        t1 = time.time()
+        print("time for period determination = ", t1-t0)
         return ampl, phase, Tiota
 
 
