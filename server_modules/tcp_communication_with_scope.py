@@ -104,7 +104,9 @@ class ConnectionToScope():
         self.set_generic(f"C{self.wcm_channel}:OFFSET", offset)
 
     def set_panel_settings(self):
-        pass
+        self.scope.send("*RCL 4")
+        self.scope.check_last_command()
+        time.sleep(1)
 
 
 

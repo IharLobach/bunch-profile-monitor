@@ -19,5 +19,6 @@
     "bunch_phase_const_deg":163,
     "range_noise_level_calculation_ns": 10,
     "iota_rf_freq_MHz": 7.5,
-    "iota_rf_harmonic": 4
+    "iota_rf_harmonic": 4,
+    "plot_df": 0.05
 }

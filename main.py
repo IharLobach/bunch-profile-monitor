@@ -35,11 +35,14 @@ from physics_engine.rf_probe import RFProbe
 
 iota_freq_MHz = get_from_config("iota_rf_freq_MHz")
 dt = get_from_config("dt_ns")
+plot_dt = get_from_config("plot_dt")
+one_per_ns = 1/(iota_freq_MHz/1000)
+npts = int(one_per_ns/plot_dt)
 
 use_test_data = get_from_config("use_test_data")
 
 conn = ConnectionToScope(dt, use_test_data)
-bpm, signal_transfer_line = init_bpm_signal_transfer_line(conn)
+bpm, signal_transfer_line = init_bpm_signal_transfer_line(conn, plot_dt, npts)
 rf = RFProbe(
     get_from_config("probe_to_RF_coef"),
     conn,

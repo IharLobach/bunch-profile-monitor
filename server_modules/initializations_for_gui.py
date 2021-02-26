@@ -4,7 +4,7 @@ from physics_engine.cable_amplifier_transfer_coefs import Amplifier, Cable, \
      SignalTransferLine, HeliaxCableHalfInch
 from server_modules.tcp_communication_with_scope import ConnectionToScope
 from server_modules.config_requests import get_from_config
-
+import numpy as np
 
 def init_signal_transfer_line(freqs):
     cwd = os.getcwd()
@@ -18,16 +18,9 @@ def init_signal_transfer_line(freqs):
     return SignalTransferLine([cable, amplifier], freqs)
 
 
-def init_bpm_signal_transfer_line(conn):
-    dt_ns = get_from_config("dt_ns")
-    bpm = BunchProfileMonitor(connection_to_scope=conn, dt=dt_ns)
-    attempt = 0
-    while True:
-        if attempt > 5:
-            raise Exception('''Attempted to get WCM data 5 times. No luck.''')
-        if bpm.update_data():
-            break
-        attempt += 1
+def init_bpm_signal_transfer_line(conn, plot_dt, data_len):
+    bpm = BunchProfileMonitor(connection_to_scope=conn, dt=plot_dt)
+    bpm.v_arr = np.zeros(data_len)
     bpm.perform_fft()
     signal_transfer_line = init_signal_transfer_line(bpm.fourier_frequencies)
     bpm.transmission_coefs = signal_transfer_line.transmission_coefs

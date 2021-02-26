@@ -39,13 +39,23 @@ class BunchProfileMonitor:
     def time_arr(self):
         return np.arange(0, self.data_len*self.dt, self.dt)
 
-    def update_data(self):
+    def update_data(self, dt_scope, Tiota):
         """returns True if updated successfully, False otherwise"""
         if self.connection_to_scope is None:
             raise TypeError("connection_to_scope is None")
         else:
             try:
-                self.v_arr = self.connection_to_scope.get_waveform()
+                wf = self.connection_to_scope.get_waveform()
+                time_arr = dt_scope*np.arange(len(wf))
+                times_in_one_period = time_arr % Tiota
+                times = (times_in_one_period/self.dt).astype(int)
+                df = pd.DataFrame({
+                    "time": times, "ori": wf})
+                df = df.groupby("time").mean()
+                df = df[df.index < self.data_len]
+                original_signal = np.zeros(self.data_len)
+                original_signal[df.index.values] = df['ori']
+                self.v_arr = original_signal
                 return True
             except Exception as e:
                 print("Exception in update data for WCM", e)
