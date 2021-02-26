@@ -63,7 +63,7 @@ class RFProbe():
         phase = np.angle(c_ampl, deg=True)
         ampl = np.absolute(c_ampl)
         Tiota = h * get_period(self.rf_voltage_arr, self.dt)
-        print("Tiota = ", Tiota)
+        # print("Tiota = ", Tiota)
         return ampl, phase, Tiota
 
 

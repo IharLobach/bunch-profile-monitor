@@ -1,11 +1,11 @@
 {
-    "dt_ns":0.1,
+    "dt_ns":0.05,
     "use_test_data":false,
     "url":"http://lobach-esb-pi3.fnal.gov:8080/bunch-profile-monitor?bokeh-session-id=0",
     "logging_length":"1 day",
     "cleaning_period_min":10,
     "clx_ip":"131.225.120.60",
-    "oscilloscope_ip":"131.225.118.120",
+    "oscilloscope_ip":"131.225.118.85",
     "oscilloscope_port":1861,
     "vertical_scale_auto":true,
     "x_range":[0,133.4],

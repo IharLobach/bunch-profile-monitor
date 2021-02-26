@@ -6,62 +6,42 @@ import time
 import pandas as pd
 import os
 import time
+from server_modules.lecroy import LeCroyScope
 
 
 class ConnectionToScope():
     timeout = 5  # sec
     HOST = get_from_config("oscilloscope_ip")
     PORT = get_from_config("oscilloscope_port")
-    quiery_id = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-                b" LO\n\x81\x01\x00\x00\x00\x00\x00\x07 *IDN?\n"
-    quiery_waveform_WCM = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C3:INSPECT? SIMPLE\n"
-    quiery_waveform_RF_probe = b"\x81\x01\x00\x00\x00\x00\x00\x08CORD"\
-        b" LO\n\x81\x01\x00\x00\x00\x00\x00\x14 C2:INSPECT? SIMPLE\n"
-    quiery_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-        b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0e C3:VOLT_DIV?\n'
-    quiery_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-        b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c C3:OFFSET?\n'
+    wcm_channel = 3
+    rf_channel=2
     command_panel_setup = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
         b' LO\n\x81\x01\x00\x00\x00\x00\x00\x08 *RCL 4\n'
-    quiery_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-        b' LO\n\x81\x01\x00\x00\x00\x00\x00\x0c F1:DEFine?\n'
 
     def __init__(self, dt_ns, testing=False):
         self.dt = dt_ns
         self.testing = testing
+        self.scope = LeCroyScope(self.HOST, timeout=self.timeout)
+        nsequence = 1
+        self.scope.clear()
+        self.scope.set_sequence_mode(nsequence)
+        settings = self.scope.get_settings()
+        if b'ON' in settings['SEQUENCE']:
+            sequence_count = int(settings['SEQUENCE'].split(',')[1])
+        else:
+            sequence_count = 1
+            
+        if nsequence != sequence_count:
+            print( 'Could not configure sequence mode properly')
+        if sequence_count != 1:
+            print( 'Using sequence mode with %i traces per aquisition' % sequence_count )
+        self.scope.trigger()
 
 
-    def get_waveform_generic(self, quiery):
-        t0 = time.time()
-        allowed_symbols = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                           '.', 'e', '+', '-', ' ')
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass  # print(e)
-            sock.sendall(quiery)
-            received = b''
-            while True:
-                received += sock.recv(4096)
-                if received[-4:] == b'\r\n"\n':  # if end of message
-                    break
-            received1 = received.split(b'INSP')[1]
-            received2 = []
-            for b in received1:
-                c = chr(b)
-                if c in allowed_symbols:
-                    received2.append(b)
-            received3 = bytes(received2).strip()
-            numbers = re.split(b'\s{1,2}', received3)
-            v_arr = np.asarray([float(v) for v in numbers])
-            t1 = time.time()
-            print("Time to get data = ", t1-t0)
-            return v_arr
+
+    def get_waveform_generic(self, channel):
+        desc, array = self.scope.get_waveform(channel)
+        return desc['vertical_gain']*array
 
     def get_waveform_testing(self):
         v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
@@ -78,7 +58,7 @@ class ConnectionToScope():
         if self.testing:
             res = self.get_waveform_testing()
         else:
-            res = self.get_waveform_generic(self.quiery_waveform_WCM)
+            res = self.get_waveform_generic(self.wcm_channel)
         return res
 
     def get_waveform_RF_testing(self):
@@ -95,126 +75,37 @@ class ConnectionToScope():
         if self.testing:
             res = self.get_waveform_RF_testing()
         else:
-            res = self.get_waveform_generic(self.quiery_waveform_RF_probe)
+            res = self.get_waveform_generic(self.rf_channel)
         return res
 
+    def get_generic(self, command):
+        self.scope.send(command + '?')
+        res = self.scope.recv().strip()
+        self.scope.check_last_command()
+        return float(res.decode().split()[1])
+
+    def set_generic(self, command, val):
+        self.scope.send(f"{command} {val} V")
+        self.scope.check_last_command()
+        time.sleep(0.25)
+
+    
+
     def get_volt_div(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass  # print(e)
-            sock.sendall(self.quiery_volt_div)
-            received = b''
-            while True:
-                received += sock.recv(4096)
-                if received[-2:] == b'V\n':
-                    break
-            res = float(re.split(b' ', received)[1])
-            return res
+        return self.get_generic(f"C{self.wcm_channel}:VOLT_DIV")
 
     def set_volt_div(self, volt_div):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass#print(e)
-            command_volt_div = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-                b' LO\n\x81\x01\x00\x00\x00\x00\x00\x13'\
-                b' C3:VOLT_DIV ' + \
-                '{}'.format(volt_div).encode()+b' V\n'
-            # print(command_volt_div)
-            sock.sendall(command_volt_div)
-            time.sleep(0.25)
+        self.set_generic(f"C{self.wcm_channel}:VOLT_DIV", volt_div)
 
     def get_offset(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass #  print(e)
-            sock.sendall(self.quiery_offset)
-            received = b''
-            while True:
-                received += sock.recv(4096)
-                if received[-2:] == b'V\n':
-                    break
-            res = float(re.split(b' ', received)[1])
-            return res
+        return self.get_generic(f"C{self.wcm_channel}:OFFSET")
 
     def set_offset(self, offset):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass  # print(e)
-            command_offset = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-                b' LO\n\x81\x01\x00\x00\x00\x00\x00\x13'\
-                b' C3:OFFSET ' + \
-                '{}'.format(offset).encode()+b' V\n'
-            # print(command_offset)
-            sock.sendall(command_offset)
-            time.sleep(0.25)
+        self.set_generic(f"C{self.wcm_channel}:OFFSET", offset)
 
     def set_panel_settings(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass  # print(e)
-            sock.sendall(self.command_panel_setup)
-            time.sleep(0.25)
+        pass
 
-    def set_sweeps(self, sweeps):
-        if not isinstance(sweeps, int):
-            raise TypeError("sweeps has to be an integer")
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass  # print(e)
-            command_sweeps = b'\x81\x01\x00\x00\x00\x00\x00\x08CORD'\
-                b' LO\n\x81\x01\x00\x00\x00\x00\x00< F1:DEF EQN,AVG(C3)'\
-                b',AVERAGETYPE,CONTINUOUS,SWEEPS,'\
-                + str(sweeps).encode()+b' SWEEP\n'
-            sock.sendall(command_sweeps)
-            time.sleep(0.25)
-
-    def get_sweeps(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(self.timeout)
-            while True:
-                try:
-                    sock.connect((self.HOST, self.PORT))
-                    break
-                except Exception as e:
-                    pass #  print(e)
-            sock.sendall(self.quiery_sweeps)
-            received = b''
-            while True:
-                received += sock.recv(4096)
-                if received[-6:] == b'SWEEP\n':
-                    break
-            res = int(re.split(b' ', re.split(b',', received)[-1])[0].decode())
-            return res
 
 
 if __name__ == "__main__":

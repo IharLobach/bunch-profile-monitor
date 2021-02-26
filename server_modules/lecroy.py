@@ -334,6 +334,7 @@ class LeCroyScope(object):
         self.send('c%s:wf? dat1' % str(channel))
         msg = self.recv()
         if not int(msg.__repr__()[3]) == channel:
+            print("In get waveform: ", msg, channel)
             raise RuntimeError('waveforms out of sync or comm_header is off.')
         wavedesc = self.get_wavedesc(channel)
         return (wavedesc, np.fromstring(msg[22:], wavedesc['dtype'], wavedesc['wave_array_count']))

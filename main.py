@@ -37,6 +37,7 @@ iota_freq_MHz = get_from_config("iota_rf_freq_MHz")
 dt = get_from_config("dt_ns")
 
 use_test_data = get_from_config("use_test_data")
+
 conn = ConnectionToScope(dt, use_test_data)
 bpm, signal_transfer_line = init_bpm_signal_transfer_line(conn)
 rf = RFProbe(
@@ -308,6 +309,7 @@ def try_update_plot():
             button_reset_scope_settings_callback(1)
             update_vertical_span()
             button_reset_scope_settings.active = False
+        conn.scope.trigger()
         update_successful_WCM = bpm.update_data()
         if not update_successful_WCM:
             raise Exception("Couldn't update WCM signal")
@@ -425,4 +427,4 @@ def try_update_plot():
         print("Exception happened in try_update_plot:", e)
 
 
-curdoc().add_periodic_callback(try_update_plot, 500)
+curdoc().add_periodic_callback(try_update_plot, 1000)
