@@ -7,7 +7,7 @@
     "clx_ip":"131.225.120.60",
     "oscilloscope_ip":"131.225.118.85",
     "oscilloscope_port":1861,
-    "vertical_scale_auto":true,
+    "vertical_scale_auto":false,
     "x_range":[0,133.4],
     "y_range":[-0.875,0.125],
     "low_signal_lim_V":0.0004,

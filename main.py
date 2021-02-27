@@ -171,7 +171,6 @@ plot.add_layout(rms_calc_right_span)
 
 
 def update_vertical_span():
-    offset = conn.get_offset()
     volt_div = conn.get_volt_div()
     target = 3*volt_div
     while True:
@@ -180,8 +179,8 @@ def update_vertical_span():
         if np.abs(of-target)/target < 0.05:
             break
     half_span = volt_div*4
-    top = half_span-offset
-    bottom = -offset-half_span
+    top = half_span-of
+    bottom = -of-half_span
     plot.y_range.start = bottom
     plot.y_range.end = top
     top_span.location = top

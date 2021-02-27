@@ -41,7 +41,7 @@ class ConnectionToScope():
 
     def get_waveform_generic(self, channel):
         desc, array = self.scope.get_waveform(channel)
-        return desc['vertical_gain']*array
+        return desc['vertical_gain']*array - desc['vertical_offset']
 
     def get_waveform_testing(self):
         v_arr_data = pd.read_csv(os.path.join(os.getcwd(),
