@@ -21,7 +21,7 @@ import signal
 import time
 from server_modules.bunch_profile_monitor_data_updater import bpm_data_updater
 from server_modules.initializations_for_gui import \
-     init_bpm_signal_transfer_line
+     init_bpm_signal_transfer_line, init_signal_transfer_line
 from server_modules.data_logging import save_full_plot_data
 from physics_engine.bunch_length_estimators import \
     calc_fwhm, calc_rms, calc_phase_angle, calc_current,\
@@ -259,7 +259,7 @@ phase_const_slider = Slider(
 time_bin_slider = Slider(
     start=0.01,
     end=0.2,
-    value=0.05,
+    value=plot_dt,
     step=0.01,
     title="Plot time bin, ns")
 
@@ -274,12 +274,20 @@ def inputs_callback(attrname, old, new):
         rms_calc_right = float(rms_calculation_max_text.value)
         rms_calc_left_span.location = rms_calc_left
         rms_calc_right_span.location = rms_calc_right
+    bpm.dt = float(time_bin_slider.value)
+    one_per_ns = 1/(iota_freq_MHz/1000)
+    npts = int(one_per_ns/bpm.dt)
+    bpm.v_arr = np.zeros(npts)
+    bpm.perform_fft()
+    signal_transfer_line.resample(bpm.fourier_frequencies)
+    bpm.transmission_coefs = signal_transfer_line.transmission_coefs
     bpm.transmission_coefs = \
         np.where(bpm.fourier_frequencies < cutoff_slider.value,
                  signal_transfer_line.transmission_coefs, 1)
 
 
-for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider]:
+for w in [rms_calculation_min_text, rms_calculation_max_text, cutoff_slider,
+          time_bin_slider]:
     w.on_change('value', inputs_callback)
 
 # Set up layouts and add to document
@@ -304,50 +312,43 @@ rms_window = get_from_config("rms_window_size")
 
 def try_update_plot():
     try:
-        plot_dt = float(time_bin_slider.value)  # ns
-        one_per_ns = 1/(iota_freq_MHz/1000)
-        npts = int(one_per_ns/plot_dt)
-        period_time_base = plot_dt*np.arange(npts)
+        plot_dt = float(time_bin_slider.value)
+        bpm.dt = plot_dt
         if button_reset_scope_settings.active:
             button_reset_scope_settings_callback(1)
             update_vertical_span()
             button_reset_scope_settings.active = False
         conn.scope.trigger()
-        update_successful_WCM = bpm.update_data()
-        if not update_successful_WCM:
-            raise Exception("Couldn't update WCM signal")
+        t0 = time.time()
         update_successful_RF = rf.update_data()
+        t1 = time.time()
+        print("time to update RF = ", t1-t0)
         if not update_successful_RF:
             raise Exception("Couldn't update RF probe signal")
         rf_ampl, rf_phase, Tiota = rf.get_amplitude_and_phase()
+        print("Tiota = ", Tiota)
+        t0 = time.time()
+        update_successful_WCM = bpm.update_data(dt, Tiota)
+        t1 = time.time()
+        print("time to update WCM = ", t1-t0)
+        if not update_successful_WCM:
+            raise Exception("Couldn't update WCM signal")
         t0 = time.time()
         bpm.perform_fft()
         bpm.perform_signal_reconstruction()
         t1 = time.time()
         print("time for fft = ", t1-t0)
-        times_in_one_period = bpm.time_arr % Tiota
-        rec = bpm.reconstructed_signal
-        ori = bpm.v_arr
-        times = (times_in_one_period/plot_dt).astype(int)
-        df = pd.DataFrame({
-            "time": times, "rec": rec, "ori": ori})
-        df = df.groupby("time").mean()
-        df = df[df.index < len(period_time_base)]
-
-        # these two are for plotting purposes
-        reconstructed_signal = np.zeros(shape=period_time_base.shape)
-        original_signal = np.zeros(shape=period_time_base.shape)
-        reconstructed_signal[df.index.values] = df['rec']
-        original_signal[df.index.values] = df['ori']
+        reconstructed_signal = bpm.reconstructed_signal
+        original_signal = bpm.v_arr
         i_min = np.argmin(reconstructed_signal)
         m = reconstructed_signal[i_min]
-        t_min = period_time_base[i_min]
+        t_min = bpm.time_arr[i_min]
         if min(original_signal) > -low_signal_limit:
-            fwhm = rms = phase_angle = current = rf_ampl = rf_phase\
+            fwhm = rms = phase_angle = current \
                  = fur = mad = rmsg = currentg = "nan"
             gaussian_fit_line_source.data = dict(x=[], y=[])
         else:
-            fwhm = calc_fwhm(reconstructed_signal, period_time_base,
+            fwhm = calc_fwhm(reconstructed_signal, bpm.time_arr,
                              t_min-mbl, t_min+mbl)
             if options_rms.active and (fwhm != 'nan'):
                 rms_left_lim = t_min-rms_window*fwhm/30
@@ -356,27 +357,27 @@ def try_update_plot():
                 rms_calc_right_span.location = rms_right_lim
                 rms_calculation_min_text.value = length_output(rms_left_lim)
                 rms_calculation_max_text.value = length_output(rms_right_lim)
-            rms = calc_rms(rec, times_in_one_period,
+            rms = calc_rms(reconstructed_signal, bpm.time_arr,
                            rms_calc_left_span.location,
                            rms_calc_right_span.location)
             phase_angle =\
-                calc_phase_angle(rec, times_in_one_period,
+                calc_phase_angle(reconstructed_signal, bpm.time_arr,
                                  rms_calc_left_span.location,
                                  rms_calc_right_span.location,
                                  iota_freq_MHz)\
                 - rf_phase-phase_const_slider.value
-            current = calc_current(rec, times_in_one_period,
+            current = calc_current(reconstructed_signal, bpm.time_arr,
                                    rms_calc_left_span.location,
                                    rms_calc_right_span.location)
-            fur = calc_fur_length(rec, times_in_one_period,
+            fur = calc_fur_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
-            mad = calc_mad_length(rec, times_in_one_period,
+            mad = calc_mad_length(reconstructed_signal, bpm.time_arr,
                                   rms_calc_left_span.location,
                                   rms_calc_right_span.location)
             try:
                 rmsg, currentg, gauss_plot_data = \
-                    calc_ramsg_currentg(reconstructed_signal, period_time_base,
+                    calc_ramsg_currentg(reconstructed_signal, bpm.time_arr,
                                         rms_calc_left_span.location,
                                         rms_calc_right_span.location,
                                         fwhm, 1000)
@@ -407,10 +408,10 @@ def try_update_plot():
                                 cutoff_slider.value])
         acnet_logger.send_to_ACNET(vals)
         reconstructed_line_source.data =\
-            dict(x=period_time_base,
+            dict(x=bpm.time_arr[:len(reconstructed_signal)],
                  y=reconstructed_signal)
         oscilloscope_line_source.data =\
-            dict(x=period_time_base,
+            dict(x=bpm.time_arr[:len(original_signal)],
                  y=original_signal)
         plot.title.text = "Last updated: {}".format(datetime.datetime.now())
         if options_vert.active:
