@@ -158,7 +158,7 @@ class LeCroyScope(object):
     '''
     A class for triggering and fetching waveforms from a LeCroy oscilloscope.
     '''
-    def __init__(self,  host, port=1861, timeout=5.0):
+    def __init__(self,  host, port=1861, timeout=1000.0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
         self.sock.settimeout(timeout)

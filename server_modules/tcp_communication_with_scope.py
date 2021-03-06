@@ -40,7 +40,10 @@ class ConnectionToScope():
 
 
     def get_waveform_generic(self, channel):
+        
         desc, array = self.scope.get_waveform(channel)
+        # print(desc)
+        # print(array)
         return desc['vertical_gain']*array - desc['vertical_offset']
 
     def get_waveform_testing(self):
