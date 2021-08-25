@@ -35,3 +35,11 @@ $ python3 -m bokeh serve bunch-profile-monitor
 Note that most of the buttons will cause errors in the program with synthetic data, because there is no connection to the oscilloscope in this configuration.
 
 Latest revisions of the program use LeCrunch2 module (https://github.com/BenLand100/LeCrunch2) for network interaction with the scope.
+
+## Raspberry Pi info
+
+* user: pi
+* password: bunchprofilemonitor
+* hostname: lobach-esb-pi3.fnal.gov
+
+
